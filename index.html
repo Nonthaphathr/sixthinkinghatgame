@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>สนุกไปกับหมวกคิด 6 ใบ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Noto+Serif+Thai:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F7F3E9;
+    --ink:#1B2A4A;
+    --ink-soft:#2E4068;
+    --brass:#C8962E;
+    --brass-light:#E3B753;
+    --good:#2E8B57;
+    --bad:#C0392B;
+    --shadow:rgba(11,18,38,.35);
+
+    /* สีประจำหมวกแต่ละใบ */
+    --hat-white:#F2F2F2;
+    --hat-red:#D64550;
+    --hat-black:#2B2B2B;
+    --hat-yellow:#F2C230;
+    --hat-green:#3CA55C;
+    --hat-blue:#2E6FC7;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:"IBM Plex Sans Thai",sans-serif;
+    background:var(--ink);
+    color:var(--paper);
+    overflow:hidden;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  #stage{
+    position:relative;
+    width:100vw;
+    height:100dvh;
+    background:#0c1426;
+    overflow:hidden;
+  }
+
+  /* กล้องและภาพซ้อน (สะท้อนกระจกทั้งคู่) */
+  #cam, #overlay{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    transform:scaleX(-1);
+  }
+  #overlay{pointer-events:none;}
+
+  /* ===== แถบหัวเรื่องบนสุด ===== */
+  .topbar{
+    position:absolute;top:0;left:0;right:0;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px;
+    background:linear-gradient(180deg,rgba(11,18,38,.78),rgba(11,18,38,0));
+    z-index:5;
+  }
+  .brand{font-weight:700;font-size:15px;letter-spacing:.2px;}
+  .brand small{display:block;font-weight:400;font-size:11px;opacity:.7;margin-top:1px;}
+  .scoreboard{
+    background:rgba(247,243,233,.12);
+    border:1px solid rgba(247,243,233,.25);
+    border-radius:999px;padding:6px 14px;font-weight:600;font-size:14px;
+    backdrop-filter:blur(6px);
+  }
+  .scoreboard b{color:var(--brass-light);}
+
+  /* ===== การ์ดสถานการณ์ ===== */
+  .scenario{
+    position:absolute;top:64px;left:50%;transform:translateX(-50%);
+    width:min(760px,92vw);
+    background:rgba(247,243,233,.95);
+    color:var(--ink);
+    border-radius:18px;
+    padding:18px 22px;
+    box-shadow:0 14px 40px var(--shadow);
+    z-index:5;
+    border-top:5px solid var(--brass);
+  }
+  .scenario .eyebrow{
+    font-size:12px;font-weight:600;letter-spacing:1px;
+    color:var(--brass);text-transform:uppercase;margin-bottom:4px;
+  }
+  .scenario .qtext{
+    font-family:"Noto Serif Thai",serif;
+    font-weight:600;font-size:21px;line-height:1.5;
+  }
+  .scenario .hint{
+    margin-top:10px;font-size:13px;color:var(--ink-soft);
+    display:flex;gap:14px;flex-wrap:wrap;align-items:center;
+  }
+  .scenario .hint span{display:inline-flex;align-items:center;gap:5px;}
+
+  /* ===== ชื่อหมวกที่กำลังเลือก (กลางล่าง) ===== */
+  .hatlabel{
+    position:absolute;left:50%;bottom:150px;transform:translateX(-50%);
+    text-align:center;z-index:5;pointer-events:none;
+    transition:opacity .2s;
+  }
+  .hatlabel .dot{
+    width:14px;height:14px;border-radius:50%;display:inline-block;
+    border:2px solid rgba(255,255,255,.6);vertical-align:middle;margin-right:8px;
+  }
+  .hatlabel .name{
+    display:inline-block;font-family:"Noto Serif Thai",serif;
+    font-weight:700;font-size:26px;
+    text-shadow:0 2px 12px rgba(0,0,0,.7);vertical-align:middle;
+  }
+  .hatlabel .role{
+    margin-top:4px;font-size:14px;opacity:.92;
+    text-shadow:0 2px 8px rgba(0,0,0,.8);
+  }
+
+  /* ===== แถบหมวก 6 ใบล่างสุด ===== */
+  .carousel{
+    position:absolute;left:0;right:0;bottom:18px;
+    display:flex;justify-content:center;gap:10px;
+    z-index:5;padding:0 12px;
+  }
+  .hatchip{
+    width:46px;height:46px;border-radius:50%;
+    border:2px solid rgba(247,243,233,.3);
+    display:grid;place-items:center;
+    transition:transform .18s, border-color .18s, box-shadow .18s;
+    opacity:.55;
+  }
+  .hatchip.active{
+    transform:scale(1.28);opacity:1;
+    border-color:#fff;
+    box-shadow:0 0 0 4px rgba(255,255,255,.18), 0 8px 20px rgba(0,0,0,.5);
+  }
+  .hatchip .swatch{width:26px;height:26px;border-radius:50%;}
+
+  /* ===== ปุ่มยืนยันด้วยมือ ===== */
+  #confirmBtn{
+    position:absolute;right:26px;bottom:84px;
+    width:104px;height:104px;border-radius:50%;
+    z-index:6;
+    display:grid;place-items:center;text-align:center;
+    background:rgba(200,150,46,.18);
+    border:2px solid var(--brass-light);
+    color:var(--paper);font-weight:700;font-size:15px;line-height:1.2;
+    backdrop-filter:blur(4px);
+    cursor:pointer;user-select:none;
+    box-shadow:0 8px 24px rgba(0,0,0,.45);
+  }
+  #confirmBtn small{display:block;font-weight:400;font-size:11px;opacity:.8;margin-top:2px;}
+  #confirmRing{
+    position:absolute;inset:-6px;border-radius:50%;
+    pointer-events:none;
+    background:conic-gradient(var(--brass-light) calc(var(--p,0)*1%), transparent 0);
+    -webkit-mask:radial-gradient(closest-side, transparent 92%, #000 93%);
+            mask:radial-gradient(closest-side, transparent 92%, #000 93%);
+    transition:background .05s linear;
+  }
+
+  /* จุดบอกตำแหน่งปลายนิ้ว */
+  #fingerDot{
+    position:absolute;width:26px;height:26px;border-radius:50%;
+    border:3px solid var(--brass-light);
+    background:rgba(227,183,83,.25);
+    transform:translate(-50%,-50%);
+    z-index:7;pointer-events:none;display:none;
+  }
+
+  /* ===== กล่องผลเฉลย ===== */
+  .feedback{
+    position:absolute;inset:0;z-index:20;
+    display:none;align-items:center;justify-content:center;
+    background:rgba(11,18,38,.72);backdrop-filter:blur(3px);
+  }
+  .feedback.show{display:flex;}
+  .feedcard{
+    width:min(560px,90vw);
+    background:var(--paper);color:var(--ink);
+    border-radius:22px;padding:28px 26px 24px;
+    box-shadow:0 24px 60px rgba(0,0,0,.5);
+    text-align:center;
+    animation:pop .35s cubic-bezier(.2,.9,.3,1.3);
+  }
+  @keyframes pop{from{transform:scale(.85);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .feedcard .verdict{font-family:"Noto Serif Thai",serif;font-weight:700;font-size:30px;margin-bottom:6px;}
+  .feedcard.correct .verdict{color:var(--good);}
+  .feedcard.wrong .verdict{color:var(--bad);}
+  .feedcard .answerline{font-size:16px;margin-bottom:14px;}
+  .feedcard .answerline b{font-weight:700;}
+  .feedcard .explain{
+    background:rgba(27,42,74,.06);border-radius:14px;
+    padding:14px 16px;font-size:15px;line-height:1.6;text-align:left;
+    border-left:4px solid var(--brass);
+  }
+  .feedcard .explain .lead{font-weight:600;color:var(--ink);}
+  .btn{
+    margin-top:18px;
+    background:var(--ink);color:var(--paper);
+    border:none;border-radius:999px;padding:12px 28px;
+    font-family:inherit;font-weight:600;font-size:16px;cursor:pointer;
+    transition:transform .12s, background .2s;
+  }
+  .btn:hover{background:var(--ink-soft);}
+  .btn:active{transform:scale(.96);}
+  .btn:focus-visible{outline:3px solid var(--brass-light);outline-offset:2px;}
+
+  /* ===== หน้าจอเริ่ม / โหลด / จบ ===== */
+  .screen{
+    position:absolute;inset:0;z-index:30;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:32px;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(200,150,46,.18), transparent 60%),
+      var(--ink);
+  }
+  .screen.hidden{display:none;}
+  .screen h1{
+    font-family:"Noto Serif Thai",serif;font-weight:700;
+    font-size:clamp(30px,6vw,52px);line-height:1.15;margin-bottom:6px;
+  }
+  .screen .sub{font-size:16px;opacity:.85;margin-bottom:4px;}
+  .screen .dev{font-size:13px;opacity:.6;margin-bottom:26px;}
+  .hatrow{display:flex;gap:12px;margin-bottom:26px;}
+  .hatrow .swatch{width:34px;height:34px;border-radius:50%;border:2px solid rgba(255,255,255,.4);}
+  .rules{
+    text-align:left;max-width:480px;font-size:15px;line-height:1.7;
+    background:rgba(247,243,233,.08);border:1px solid rgba(247,243,233,.16);
+    border-radius:16px;padding:18px 22px;margin-bottom:26px;
+  }
+  .rules li{margin-bottom:8px;list-style:none;padding-left:26px;position:relative;}
+  .rules li::before{content:"›";position:absolute;left:6px;color:var(--brass-light);font-weight:700;}
+  .bigbtn{
+    background:var(--brass);color:#1b1406;
+    border:none;border-radius:999px;padding:16px 44px;
+    font-family:inherit;font-weight:700;font-size:19px;cursor:pointer;
+    box-shadow:0 10px 30px rgba(200,150,46,.4);
+    transition:transform .12s, background .2s;
+  }
+  .bigbtn:hover{background:var(--brass-light);}
+  .bigbtn:active{transform:scale(.97);}
+  .bigbtn:focus-visible{outline:3px solid #fff;outline-offset:3px;}
+  .loadnote{margin-top:18px;font-size:14px;opacity:.7;min-height:20px;}
+  .spinner{
+    width:46px;height:46px;border-radius:50%;
+    border:4px solid rgba(247,243,233,.2);border-top-color:var(--brass-light);
+    animation:spin 1s linear infinite;margin-bottom:18px;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .scorebig{
+    font-family:"Noto Serif Thai",serif;font-weight:700;
+    font-size:clamp(48px,12vw,90px);color:var(--brass-light);line-height:1;
+    margin:8px 0 4px;
+  }
+  .scoremsg{font-size:18px;margin-bottom:24px;}
+
+  .errbox{
+    background:rgba(192,57,43,.15);border:1px solid rgba(192,57,43,.5);
+    border-radius:14px;padding:14px 18px;font-size:14px;max-width:460px;
+    line-height:1.6;margin-top:10px;display:none;
+  }
+
+  @media (max-width:520px){
+    #confirmBtn{width:88px;height:88px;font-size:13px;right:16px;bottom:74px;}
+    .hatchip{width:40px;height:40px;}
+    .hatchip .swatch{width:22px;height:22px;}
+    .scenario .qtext{font-size:18px;}
+    .hatlabel{bottom:130px;}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms !important;transition-duration:.001ms !important;}
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <video id="cam" autoplay playsinline muted></video>
+  <canvas id="overlay"></canvas>
+
+  <!-- แถบบน -->
+  <div class="topbar">
+    <div class="brand">สนุกไปกับหมวกคิด 6 ใบ
+      <small>พัฒนาโดย ครูนนทพัทธ์ หิรัญเรือง</small>
+    </div>
+    <div class="scoreboard">ข้อ <b id="qnum">1</b>/<span id="qtotal">8</span> · คะแนน <b id="score">0</b></div>
+  </div>
+
+  <!-- สถานการณ์ -->
+  <div class="scenario" id="scenarioCard" style="display:none;">
+    <div class="eyebrow">สถานการณ์</div>
+    <div class="qtext" id="qtext">—</div>
+    <div class="hint">
+      <span>↔ หันหน้าซ้าย–ขวา เพื่อเลือกหมวก</span>
+      <span>✋ เอามือแตะปุ่มค้างเพื่อยืนยัน</span>
+    </div>
+  </div>
+
+  <!-- ชื่อหมวกที่เลือก -->
+  <div class="hatlabel" id="hatLabel" style="display:none;">
+    <div><span class="dot" id="hatDot"></span><span class="name" id="hatName">—</span></div>
+    <div class="role" id="hatRole">—</div>
+  </div>
+
+  <!-- แถบหมวก -->
+  <div class="carousel" id="carousel" style="display:none;"></div>
+
+  <!-- ปุ่มยืนยัน -->
+  <div id="confirmBtn" style="display:none;">
+    <div id="confirmRing"></div>
+    <div>ยืนยัน<small>แตะค้าง</small></div>
+  </div>
+
+  <!-- จุดปลายนิ้ว -->
+  <div id="fingerDot"></div>
+
+  <!-- เฉลย -->
+  <div class="feedback" id="feedback">
+    <div class="feedcard" id="feedcard">
+      <div class="verdict" id="verdict">—</div>
+      <div class="answerline" id="answerline">—</div>
+      <div class="explain"><span class="lead" id="explainLead">เพราะอะไร?</span><br><span id="explainText">—</span></div>
+      <button class="btn" id="nextBtn">ข้อต่อไป →</button>
+    </div>
+  </div>
+
+  <!-- หน้าจอเริ่ม -->
+  <div class="screen" id="startScreen">
+    <h1>สนุกไปกับหมวกคิด 6 ใบ</h1>
+    <div class="sub">เกมฝึกการคิดด้วยเทคโนโลยี AR · สวมหมวกคิดให้ตรงสถานการณ์</div>
+    <div class="dev">พัฒนาโดย ครูนนทพัทธ์ หิรัญเรือง</div>
+    <div class="hatrow">
+      <div class="swatch" style="background:var(--hat-white)"></div>
+      <div class="swatch" style="background:var(--hat-red)"></div>
+      <div class="swatch" style="background:var(--hat-black)"></div>
+      <div class="swatch" style="background:var(--hat-yellow)"></div>
+      <div class="swatch" style="background:var(--hat-green)"></div>
+      <div class="swatch" style="background:var(--hat-blue)"></div>
+    </div>
+    <ul class="rules">
+      <li>อ่านสถานการณ์ที่ปรากฏบนจอ แล้วคิดว่าควรใช้การคิดแบบหมวกสีใด</li>
+      <li>หันหน้าไปทางซ้ายหรือขวา เพื่อเลื่อนเลือกหมวกที่จะสวมบนหัว</li>
+      <li>เมื่อมั่นใจแล้ว เอามือแตะปุ่ม “ยืนยัน” บนจอค้างไว้ครู่หนึ่ง</li>
+      <li>ทุกข้อจะมีคำอธิบายว่าทำไมหมวกสีนั้นจึงเหมาะกับสถานการณ์</li>
+    </ul>
+    <button class="bigbtn" id="startBtn">เปิดกล้องแล้วเริ่มเล่น</button>
+    <div class="errbox" id="errbox"></div>
+    <div class="loadnote">ระบบจะขออนุญาตใช้กล้อง โปรดกด “อนุญาต”</div>
+  </div>
+
+  <!-- หน้าจอโหลด -->
+  <div class="screen hidden" id="loadScreen">
+    <div class="spinner"></div>
+    <h1 style="font-size:28px;">กำลังเตรียมระบบตรวจจับ…</h1>
+    <div class="loadnote" id="loadnote">กำลังโหลดโมเดล AI</div>
+  </div>
+
+  <!-- หน้าจอจบ -->
+  <div class="screen hidden" id="endScreen">
+    <h1 style="font-size:34px;">เล่นจบแล้ว!</h1>
+    <div class="scorebig"><span id="finalScore">0</span>/<span id="finalTotal">8</span></div>
+    <div class="scoremsg" id="finalMsg">—</div>
+    <button class="bigbtn" id="restartBtn">เล่นอีกครั้ง</button>
+  </div>
+</div>
+
+<script type="module">
+import { FaceLandmarker, HandLandmarker, FilesetResolver }
+  from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.12";
+
+/* ---------- ข้อมูลหมวก 6 ใบ ---------- */
+const HATS = [
+  { key:"white",  name:"หมวกขาว",  role:"ข้อมูล ตัวเลข ข้อเท็จจริงที่เป็นกลาง", color:"#F2F2F2",
+    img:"https://nonthaphathr.github.io/uploadimg/sixhatwhite.png" },
+  { key:"red",    name:"หมวกแดง",  role:"อารมณ์ ความรู้สึก สัญชาตญาณ",        color:"#D64550",
+    img:"https://nonthaphathr.github.io/uploadimg/sixhatred.png" },
+  { key:"black",  name:"หมวกดำ",   role:"ข้อควรระวัง จุดอ่อน ความเสี่ยง",      color:"#2B2B2B",
+    img:"https://nonthaphathr.github.io/uploadimg/sixhatblack.png" },
+  { key:"yellow", name:"หมวกเหลือง", role:"ข้อดี ประโยชน์ การมองแง่บวก",      color:"#F2C230",
+    img:"https://nonthaphathr.github.io/uploadimg/sixhatyellow.png" },
+  { key:"green",  name:"หมวกเขียว", role:"ความคิดสร้างสรรค์ ไอเดียใหม่ ทางเลือก", color:"#3CA55C",
+    img:"https://nonthaphathr.github.io/uploadimg/sixhatgreen.png" },
+  { key:"blue",   name:"หมวกฟ้า",   role:"ควบคุม จัดระบบ ภาพรวม กระบวนการคิด",  color:"#2E6FC7",
+    img:"https://nonthaphathr.github.io/uploadimg/sixhatblue.png" },
+];
+const HAT_INDEX = Object.fromEntries(HATS.map((h,i)=>[h.key,i]));
+
+/* ---------- สถานการณ์ (เฉลย + คำอธิบาย) ---------- */
+const SCENARIOS = [
+  { answer:"white",
+    text:"ครูถามในชั้นเรียนว่า “ปีที่ผ่านมาโรงเรียนของเรามีนักเรียนทั้งหมดกี่คน และมาจากตำบลใดบ้าง”",
+    explain:"หมวกขาวคือการคิดด้วยข้อมูล ข้อเท็จจริง และตัวเลขที่เป็นกลาง โดยไม่ใส่ความรู้สึกหรือความคิดเห็นส่วนตัว" },
+  { answer:"red",
+    text:"เพื่อนเพิ่งเล่าว่าสุนัขที่เลี้ยงมานานเสียชีวิต คุณอยากบอกเพื่อนว่าคุณรู้สึกเสียใจและเห็นใจมากแค่ไหน",
+    explain:"หมวกแดงคือการแสดงอารมณ์ ความรู้สึก และสัญชาตญาณออกมาตรง ๆ โดยไม่ต้องหาเหตุผลมาอธิบาย" },
+  { answer:"black",
+    text:"ก่อนอนุมัติให้นักเรียนไปเข้าค่ายริมแม่น้ำ ครูต้องพิจารณาอันตรายและความเสี่ยงที่อาจเกิดขึ้น",
+    explain:"หมวกดำคือการคิดอย่างระมัดระวัง มองหาจุดอ่อน ความเสี่ยง และสิ่งที่อาจผิดพลาด เพื่อป้องกันไว้ล่วงหน้า" },
+  { answer:"yellow",
+    text:"คุณกำลังเตรียมนำเสนอเหตุผลว่าทำไมโรงเรียนควรมีแปลงผักของนักเรียน โดยเน้นที่ประโยชน์ที่จะได้รับ",
+    explain:"หมวกเหลืองคือการมองแง่บวก ค้นหาข้อดี คุณค่า และประโยชน์ของสิ่งต่าง ๆ" },
+  { answer:"green",
+    text:"ขยะในโรงอาหารมีจำนวนมาก คุณต้องการไอเดียใหม่ ๆ ที่แปลกและสร้างสรรค์เพื่อช่วยลดขยะ",
+    explain:"หมวกเขียวคือการคิดสร้างสรรค์ เสนอทางเลือกใหม่ และไอเดียที่แตกต่างไปจากเดิม" },
+  { answer:"blue",
+    text:"เริ่มประชุมกลุ่มทำโครงงาน คุณต้องวางแผนว่าจะคุยเรื่องใดก่อน–หลัง และคอยสรุปภาพรวมให้ทุกคน",
+    explain:"หมวกฟ้าคือการควบคุมและจัดระบบความคิด ดูแลกระบวนการคิด และสรุปภาพรวมทั้งหมด" },
+  { answer:"white",
+    text:"อยากทราบว่าจริง ๆ แล้วเดือนที่ผ่านมาฝนตกกี่วัน เพื่อใช้วางแผนกิจกรรมกลางแจ้ง",
+    explain:"หมวกขาวเน้นข้อมูลและข้อเท็จจริงที่ตรวจสอบได้ เช่น จำนวนวันที่ฝนตกจริง โดยไม่คาดเดา" },
+  { answer:"yellow",
+    text:"มีคนเสนอให้ติดตั้งแผงโซลาร์เซลล์บนหลังคาอาคารเรียน คุณอยากชี้ให้เห็นข้อดีและผลดีในระยะยาว",
+    explain:"หมวกเหลืองมองหาประโยชน์และข้อดี เช่น ช่วยประหยัดค่าไฟและเป็นมิตรกับสิ่งแวดล้อม" },
+];
+
+/* ---------- ตัวแปรหลัก ---------- */
+const $ = s => document.querySelector(s);
+const stage = $("#stage");
+const video = $("#cam");
+const overlay = $("#overlay");
+const ctx = overlay.getContext("2d");
+
+let faceLandmarker=null, handLandmarker=null;
+let running=false, phase="idle";      // idle | question | feedback | end
+let selected=0;                       // index ของหมวกที่เลือก
+let yawArmed=true;                    // ระบบหน่วงการเลื่อนหมวก
+let order=[], qi=0, score=0;
+const HOLD_MS=1200;
+let holdStart=0;
+const hatImgs=[];
+
+/* ---------- โหลดรูปหมวก ---------- */
+function preloadHats(){
+  return Promise.all(HATS.map(h=>new Promise(res=>{
+    const im=new Image();
+    im.crossOrigin="anonymous";
+    im.onload=()=>res(im);
+    im.onerror=()=>res(null);   // ถ้ารูปโหลดไม่ได้ ก็ข้ามไป (จะวาดวงกลมสีแทน)
+    im.src=h.img;
+  }))).then(arr=>{arr.forEach((im,i)=>hatImgs[i]=im);});
+}
+
+/* ---------- สร้างแถบหมวก ---------- */
+function buildCarousel(){
+  const c=$("#carousel"); c.innerHTML="";
+  HATS.forEach((h,i)=>{
+    const chip=document.createElement("div");
+    chip.className="hatchip";
+    chip.innerHTML=`<div class="swatch" style="background:${h.color}"></div>`;
+    c.appendChild(chip);
+  });
+}
+function refreshHatUI(){
+  document.querySelectorAll(".hatchip").forEach((c,i)=>c.classList.toggle("active",i===selected));
+  const h=HATS[selected];
+  $("#hatName").textContent=h.name;
+  $("#hatRole").textContent=h.role;
+  $("#hatDot").style.background=h.color;
+}
+function selectDelta(d){
+  selected=(selected+d+HATS.length)%HATS.length;
+  refreshHatUI();
+}
+
+/* ---------- เริ่มกล้อง + โมเดล ---------- */
+async function init(){
+  $("#startScreen").classList.add("hidden");
+  $("#loadScreen").classList.remove("hidden");
+  try{
+    $("#loadnote").textContent="กำลังขอสิทธิ์ใช้กล้อง…";
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:1280,height:720},audio:false});
+    video.srcObject=stream;
+    await video.play();
+
+    $("#loadnote").textContent="กำลังโหลดโมเดลตรวจจับใบหน้าและมือ…";
+    const vision=await FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.12/wasm");
+    faceLandmarker=await FaceLandmarker.createFromOptions(vision,{
+      baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",delegate:"GPU"},
+      runningMode:"VIDEO",numFaces:1});
+    handLandmarker=await HandLandmarker.createFromOptions(vision,{
+      baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",delegate:"GPU"},
+      runningMode:"VIDEO",numHands:1});
+
+    resizeCanvas();
+    $("#loadScreen").classList.add("hidden");
+    startGame();
+    running=true;
+    requestAnimationFrame(loop);
+  }catch(err){
+    $("#loadScreen").classList.add("hidden");
+    $("#startScreen").classList.remove("hidden");
+    const box=$("#errbox");
+    box.style.display="block";
+    box.innerHTML="เปิดกล้องไม่สำเร็จ: "+(err && err.message ? err.message : err)+
+      "<br><br>หากเปิดไฟล์นี้จากเครื่องโดยตรง กล้องอาจถูกบล็อก แนะนำให้นำไฟล์ไปวางบนเว็บ (เช่น github.io ของคุณครู) แล้วเปิดผ่าน https จึงจะใช้กล้องได้";
+  }
+}
+
+function resizeCanvas(){
+  overlay.width=stage.clientWidth;
+  overlay.height=stage.clientHeight;
+}
+window.addEventListener("resize",resizeCanvas);
+
+/* ---------- เริ่มเกม / โหลดข้อ ---------- */
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function startGame(){
+  order=shuffle([...Array(SCENARIOS.length).keys()]);
+  qi=0; score=0;
+  $("#qtotal").textContent=SCENARIOS.length;
+  $("#scenarioCard").style.display="";
+  $("#hatLabel").style.display="";
+  $("#carousel").style.display="";
+  $("#confirmBtn").style.display="";
+  loadQuestion();
+}
+function loadQuestion(){
+  const sc=SCENARIOS[order[qi]];
+  $("#qtext").textContent=sc.text;
+  $("#qnum").textContent=qi+1;
+  $("#score").textContent=score;
+  selected=0; refreshHatUI();
+  holdStart=0; setRing(0);
+  phase="question";
+}
+
+/* ---------- ยืนยันคำตอบ ---------- */
+function confirmAnswer(){
+  if(phase!=="question") return;
+  phase="feedback";
+  setRing(0); holdStart=0;
+  const sc=SCENARIOS[order[qi]];
+  const chosen=HATS[selected];
+  const correct=chosen.key===sc.answer;
+  if(correct) score++;
+  $("#score").textContent=score;
+
+  const card=$("#feedcard");
+  card.classList.remove("correct","wrong");
+  card.classList.add(correct?"correct":"wrong");
+  $("#verdict").textContent=correct?"ถูกต้อง!":"ลองคิดใหม่นะ";
+  const ans=HATS[HAT_INDEX[sc.answer]];
+  $("#answerline").innerHTML = correct
+    ? `คุณเลือก <b>${chosen.name}</b> ได้เหมาะกับสถานการณ์`
+    : `คุณเลือก <b>${chosen.name}</b> · คำตอบที่เหมาะคือ <b>${ans.name}</b>`;
+  $("#explainText").textContent=sc.explain;
+  $("#feedback").classList.add("show");
+}
+function nextQuestion(){
+  $("#feedback").classList.remove("show");
+  qi++;
+  if(qi>=SCENARIOS.length){ endGame(); return; }
+  loadQuestion();
+}
+function endGame(){
+  phase="end";
+  $("#scenarioCard").style.display="none";
+  $("#hatLabel").style.display="none";
+  $("#carousel").style.display="none";
+  $("#confirmBtn").style.display="none";
+  $("#finalScore").textContent=score;
+  $("#finalTotal").textContent=SCENARIOS.length;
+  const pct=score/SCENARIOS.length;
+  $("#finalMsg").textContent =
+    pct===1 ? "ยอดเยี่ยม! เข้าใจหมวกคิดทุกใบเลย" :
+    pct>=0.7 ? "เก่งมาก! เข้าใจการคิดแต่ละแบบได้ดี" :
+    pct>=0.4 ? "ทำได้ดี ลองทบทวนหมวกที่ยังสับสนอีกครั้ง" :
+               "ไม่เป็นไร ลองเล่นอีกครั้งเพื่อทำความรู้จักหมวกแต่ละใบ";
+  $("#endScreen").classList.remove("hidden");
+}
+
+/* ---------- วงแหวนยืนยัน ---------- */
+function setRing(p){ $("#confirmRing").style.setProperty("--p",p); }
+
+/* ---------- ลูปตรวจจับ ---------- */
+function loop(){
+  if(!running) return;
+  if(video.readyState>=2){
+    const t=performance.now();
+    let face=null, hand=null;
+    try{ face=faceLandmarker.detectForVideo(video,t);}catch(e){}
+    try{ hand=handLandmarker.detectForVideo(video,t);}catch(e){}
+    ctx.clearRect(0,0,overlay.width,overlay.height);
+    if(face && face.faceLandmarks.length){
+      drawHat(face.faceLandmarks[0]);
+      if(phase==="question") handleYaw(face.faceLandmarks[0]);
+    }
+    handleHand(hand);
+  }
+  requestAnimationFrame(loop);
+}
+
+/* ---------- วาดหมวกบนหัว ---------- */
+function drawHat(lm){
+  const W=overlay.width, H=overlay.height;
+  const left=lm[234], right=lm[454], top=lm[10];
+  const eyeL=lm[33], eyeR=lm[263];
+  const faceW=Math.hypot((right.x-left.x)*W,(right.y-left.y)*H);
+  const cx=top.x*W, cy=top.y*H;
+  const roll=Math.atan2((eyeR.y-eyeL.y)*H,(eyeR.x-eyeL.x)*W);
+  const hatW=faceW*2.05;
+  const img=hatImgs[selected];
+
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.rotate(roll);
+  if(img){
+    const hatH=hatW*(img.naturalHeight/img.naturalWidth || 0.8);
+    ctx.drawImage(img,-hatW/2,-hatH*0.96,hatW,hatH);
+  }else{
+    // สำรอง: วาดวงกลมสีหมวกถ้ารูปโหลดไม่ได้
+    ctx.fillStyle=HATS[selected].color;
+    ctx.beginPath();ctx.arc(0,-hatW*0.35,hatW*0.42,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* ---------- หันหน้าเลือกหมวก ---------- */
+function handleYaw(lm){
+  const left=lm[234], right=lm[454], nose=lm[1];
+  const span=right.x-left.x;
+  if(Math.abs(span)<1e-4) return;
+  const ratio=(nose.x-left.x)/span;     // ~0.5 = มองตรง
+  if(ratio>0.62 && yawArmed){ selectDelta(+1); yawArmed=false; }
+  else if(ratio<0.38 && yawArmed){ selectDelta(-1); yawArmed=false; }
+  else if(ratio>0.45 && ratio<0.55){ yawArmed=true; }   // กลับมาตรงกลางแล้วค่อยเลื่อนใหม่
+}
+
+/* ---------- มือแตะปุ่มยืนยัน ---------- */
+function handleHand(hand){
+  const dot=$("#fingerDot");
+  const btn=$("#confirmBtn");
+  if(phase!=="question" || !hand || !hand.landmarks.length){
+    dot.style.display="none";
+    if(holdStart){ holdStart=0; setRing(0); }
+    return;
+  }
+  // ปลายนิ้วชี้ = 8 ; พิกัดภาพถูกสะท้อนกระจก จึงใช้ (1-x)
+  const tip=hand.landmarks[0][8];
+  const sx=(1-tip.x)*stage.clientWidth;
+  const sy=tip.y*stage.clientHeight;
+  dot.style.display="block";
+  dot.style.left=sx+"px";
+  dot.style.top=sy+"px";
+
+  const r=btn.getBoundingClientRect();
+  const st=stage.getBoundingClientRect();
+  const bx=r.left-st.left+r.width/2;
+  const by=r.top-st.top+r.height/2;
+  const dist=Math.hypot(sx-bx,sy-by);
+
+  if(dist < r.width*0.7){
+    if(!holdStart) holdStart=performance.now();
+    const p=Math.min(100,(performance.now()-holdStart)/HOLD_MS*100);
+    setRing(p);
+    dot.style.borderColor="var(--good)";
+    if(p>=100){ confirmAnswer(); }
+  }else{
+    holdStart=0; setRing(0);
+    dot.style.borderColor="var(--brass-light)";
+  }
+}
+
+/* ---------- แป้นพิมพ์สำรอง (ทดสอบโดยไม่ใช้กล้องได้) ---------- */
+window.addEventListener("keydown",e=>{
+  if(phase==="question"){
+    if(e.key==="ArrowRight"){selectDelta(+1);}
+    else if(e.key==="ArrowLeft"){selectDelta(-1);}
+    else if(e.key==="Enter"||e.key===" "){e.preventDefault();confirmAnswer();}
+  }else if(phase==="feedback" && (e.key==="Enter"||e.key===" ")){nextQuestion();}
+});
+// คลิกปุ่มได้ด้วย (สำหรับทดสอบ/สำรอง)
+$("#confirmBtn").addEventListener("click",()=>{ if(phase==="question") confirmAnswer(); });
+
+/* ---------- ปุ่มควบคุม ---------- */
+$("#startBtn").addEventListener("click",init);
+$("#nextBtn").addEventListener("click",nextQuestion);
+$("#restartBtn").addEventListener("click",()=>{
+  $("#endScreen").classList.add("hidden");
+  startGame();
+});
+
+/* ---------- เตรียมพร้อม ---------- */
+buildCarousel();
+refreshHatUI();
+preloadHats();
+</script>
+</body>
+</html>
