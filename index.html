@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>สนุกไปกับหมวกคิด 6 ใบ</title>
+<link rel="icon" id="faviconLink" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E%F0%9F%8E%A9%3C/text%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Noto+Serif+Thai:wght@500;600;700&display=swap" rel="stylesheet">
@@ -18,7 +19,6 @@
     --bad:#C0392B;
     --shadow:rgba(11,18,38,.35);
 
-    /* สีประจำหมวกแต่ละใบ */
     --hat-white:#F2F2F2;
     --hat-red:#D64550;
     --hat-black:#2B2B2B;
@@ -45,7 +45,6 @@
     overflow:hidden;
   }
 
-  /* กล้องและภาพซ้อน (สะท้อนกระจกทั้งคู่) */
   #cam, #overlay{
     position:absolute;
     inset:0;
@@ -56,21 +55,29 @@
   }
   #overlay{pointer-events:none;}
 
-  /* ===== แถบหัวเรื่องบนสุด ===== */
+  /* ===== แถบบน ===== */
   .topbar{
     position:absolute;top:0;left:0;right:0;
-    display:flex;align-items:center;justify-content:space-between;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
     padding:14px 18px;
     background:linear-gradient(180deg,rgba(11,18,38,.78),rgba(11,18,38,0));
     z-index:5;
   }
   .brand{font-weight:700;font-size:15px;letter-spacing:.2px;}
   .brand small{display:block;font-weight:400;font-size:11px;opacity:.7;margin-top:1px;}
+  .top-right{display:flex;align-items:center;gap:10px;}
+  .iconbtn{
+    width:38px;height:38px;border-radius:50%;
+    background:rgba(247,243,233,.12);border:1px solid rgba(247,243,233,.25);
+    color:var(--paper);font-size:17px;cursor:pointer;display:grid;place-items:center;
+    backdrop-filter:blur(6px);transition:background .2s;
+  }
+  .iconbtn:hover{background:rgba(247,243,233,.22);}
   .scoreboard{
     background:rgba(247,243,233,.12);
     border:1px solid rgba(247,243,233,.25);
     border-radius:999px;padding:6px 14px;font-weight:600;font-size:14px;
-    backdrop-filter:blur(6px);
+    backdrop-filter:blur(6px);white-space:nowrap;
   }
   .scoreboard b{color:var(--brass-light);}
 
@@ -98,13 +105,11 @@
     margin-top:10px;font-size:13px;color:var(--ink-soft);
     display:flex;gap:14px;flex-wrap:wrap;align-items:center;
   }
-  .scenario .hint span{display:inline-flex;align-items:center;gap:5px;}
 
-  /* ===== ชื่อหมวกที่กำลังเลือก (กลางล่าง) ===== */
+  /* ===== ชื่อหมวก ===== */
   .hatlabel{
     position:absolute;left:50%;bottom:150px;transform:translateX(-50%);
     text-align:center;z-index:5;pointer-events:none;
-    transition:opacity .2s;
   }
   .hatlabel .dot{
     width:14px;height:14px;border-radius:50%;display:inline-block;
@@ -120,7 +125,7 @@
     text-shadow:0 2px 8px rgba(0,0,0,.8);
   }
 
-  /* ===== แถบหมวก 6 ใบล่างสุด ===== */
+  /* ===== แถบหมวก ===== */
   .carousel{
     position:absolute;left:0;right:0;bottom:18px;
     display:flex;justify-content:center;gap:10px;
@@ -140,39 +145,32 @@
   }
   .hatchip .swatch{width:26px;height:26px;border-radius:50%;}
 
-  /* ===== ปุ่มยืนยันด้วยมือ ===== */
+  /* ===== ปุ่มยืนยัน ===== */
   #confirmBtn{
     position:absolute;right:26px;bottom:84px;
     width:104px;height:104px;border-radius:50%;
-    z-index:6;
-    display:grid;place-items:center;text-align:center;
+    z-index:6;display:grid;place-items:center;text-align:center;
     background:rgba(200,150,46,.18);
     border:2px solid var(--brass-light);
     color:var(--paper);font-weight:700;font-size:15px;line-height:1.2;
-    backdrop-filter:blur(4px);
-    cursor:pointer;user-select:none;
+    backdrop-filter:blur(4px);cursor:pointer;user-select:none;
     box-shadow:0 8px 24px rgba(0,0,0,.45);
   }
   #confirmBtn small{display:block;font-weight:400;font-size:11px;opacity:.8;margin-top:2px;}
   #confirmRing{
-    position:absolute;inset:-6px;border-radius:50%;
-    pointer-events:none;
+    position:absolute;inset:-6px;border-radius:50%;pointer-events:none;
     background:conic-gradient(var(--brass-light) calc(var(--p,0)*1%), transparent 0);
     -webkit-mask:radial-gradient(closest-side, transparent 92%, #000 93%);
             mask:radial-gradient(closest-side, transparent 92%, #000 93%);
     transition:background .05s linear;
   }
-
-  /* จุดบอกตำแหน่งปลายนิ้ว */
   #fingerDot{
     position:absolute;width:26px;height:26px;border-radius:50%;
-    border:3px solid var(--brass-light);
-    background:rgba(227,183,83,.25);
-    transform:translate(-50%,-50%);
-    z-index:7;pointer-events:none;display:none;
+    border:3px solid var(--brass-light);background:rgba(227,183,83,.25);
+    transform:translate(-50%,-50%);z-index:7;pointer-events:none;display:none;
   }
 
-  /* ===== กล่องผลเฉลย ===== */
+  /* ===== เฉลย ===== */
   .feedback{
     position:absolute;inset:0;z-index:20;
     display:none;align-items:center;justify-content:center;
@@ -180,11 +178,9 @@
   }
   .feedback.show{display:flex;}
   .feedcard{
-    width:min(560px,90vw);
-    background:var(--paper);color:var(--ink);
+    width:min(560px,90vw);background:var(--paper);color:var(--ink);
     border-radius:22px;padding:28px 26px 24px;
-    box-shadow:0 24px 60px rgba(0,0,0,.5);
-    text-align:center;
+    box-shadow:0 24px 60px rgba(0,0,0,.5);text-align:center;
     animation:pop .35s cubic-bezier(.2,.9,.3,1.3);
   }
   @keyframes pop{from{transform:scale(.85);opacity:0;}to{transform:scale(1);opacity:1;}}
@@ -192,16 +188,14 @@
   .feedcard.correct .verdict{color:var(--good);}
   .feedcard.wrong .verdict{color:var(--bad);}
   .feedcard .answerline{font-size:16px;margin-bottom:14px;}
-  .feedcard .answerline b{font-weight:700;}
   .feedcard .explain{
-    background:rgba(27,42,74,.06);border-radius:14px;
-    padding:14px 16px;font-size:15px;line-height:1.6;text-align:left;
-    border-left:4px solid var(--brass);
+    background:rgba(27,42,74,.06);border-radius:14px;padding:14px 16px;
+    font-size:15px;line-height:1.6;text-align:left;border-left:4px solid var(--brass);
   }
   .feedcard .explain .lead{font-weight:600;color:var(--ink);}
+
   .btn{
-    margin-top:18px;
-    background:var(--ink);color:var(--paper);
+    margin-top:18px;background:var(--ink);color:var(--paper);
     border:none;border-radius:999px;padding:12px 28px;
     font-family:inherit;font-weight:600;font-size:16px;cursor:pointer;
     transition:transform .12s, background .2s;
@@ -210,7 +204,7 @@
   .btn:active{transform:scale(.96);}
   .btn:focus-visible{outline:3px solid var(--brass-light);outline-offset:2px;}
 
-  /* ===== หน้าจอเริ่ม / โหลด / จบ ===== */
+  /* ===== หน้าจอ ===== */
   .screen{
     position:absolute;inset:0;z-index:30;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -218,53 +212,119 @@
     background:
       radial-gradient(1200px 600px at 50% -10%, rgba(200,150,46,.18), transparent 60%),
       var(--ink);
+    background-size:cover;background-position:center;
   }
+  .screen.has-bg{background-blend-mode:overlay;}
   .screen.hidden{display:none;}
+  #startScreen .veil{position:absolute;inset:0;background:rgba(11,18,38,.55);z-index:-1;}
+  #logoImg{max-height:96px;margin-bottom:16px;display:none;filter:drop-shadow(0 6px 18px rgba(0,0,0,.5));}
   .screen h1{
     font-family:"Noto Serif Thai",serif;font-weight:700;
     font-size:clamp(30px,6vw,52px);line-height:1.15;margin-bottom:6px;
   }
-  .screen .sub{font-size:16px;opacity:.85;margin-bottom:4px;}
-  .screen .dev{font-size:13px;opacity:.6;margin-bottom:26px;}
-  .hatrow{display:flex;gap:12px;margin-bottom:26px;}
+  .screen .sub{font-size:16px;opacity:.9;margin-bottom:4px;}
+  .screen .dev{font-size:13px;opacity:.7;margin-bottom:22px;}
+  .hatrow{display:flex;gap:12px;margin-bottom:22px;}
   .hatrow .swatch{width:34px;height:34px;border-radius:50%;border:2px solid rgba(255,255,255,.4);}
   .rules{
     text-align:left;max-width:480px;font-size:15px;line-height:1.7;
     background:rgba(247,243,233,.08);border:1px solid rgba(247,243,233,.16);
-    border-radius:16px;padding:18px 22px;margin-bottom:26px;
+    border-radius:16px;padding:18px 22px;margin-bottom:18px;
   }
   .rules li{margin-bottom:8px;list-style:none;padding-left:26px;position:relative;}
   .rules li::before{content:"›";position:absolute;left:6px;color:var(--brass-light);font-weight:700;}
+  .namefield{
+    margin-bottom:18px;display:flex;flex-direction:column;gap:6px;align-items:center;
+  }
+  .namefield label{font-size:13px;opacity:.8;}
+  .namefield input{
+    width:260px;max-width:80vw;text-align:center;
+    background:rgba(247,243,233,.1);border:1px solid rgba(247,243,233,.3);
+    color:var(--paper);border-radius:10px;padding:10px 14px;font-family:inherit;font-size:15px;
+  }
+  .namefield input:focus{outline:2px solid var(--brass-light);}
+  .start-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center;}
   .bigbtn{
-    background:var(--brass);color:#1b1406;
-    border:none;border-radius:999px;padding:16px 44px;
-    font-family:inherit;font-weight:700;font-size:19px;cursor:pointer;
-    box-shadow:0 10px 30px rgba(200,150,46,.4);
-    transition:transform .12s, background .2s;
+    background:var(--brass);color:#1b1406;border:none;border-radius:999px;
+    padding:16px 44px;font-family:inherit;font-weight:700;font-size:19px;cursor:pointer;
+    box-shadow:0 10px 30px rgba(200,150,46,.4);transition:transform .12s, background .2s;
   }
   .bigbtn:hover{background:var(--brass-light);}
   .bigbtn:active{transform:scale(.97);}
   .bigbtn:focus-visible{outline:3px solid #fff;outline-offset:3px;}
-  .loadnote{margin-top:18px;font-size:14px;opacity:.7;min-height:20px;}
+  .ghostbtn{
+    background:transparent;color:var(--paper);border:1px solid rgba(247,243,233,.4);
+    border-radius:999px;padding:15px 26px;font-family:inherit;font-weight:600;font-size:16px;cursor:pointer;
+    transition:background .2s;
+  }
+  .ghostbtn:hover{background:rgba(247,243,233,.12);}
+  .loadnote{margin-top:16px;font-size:14px;opacity:.75;min-height:20px;}
   .spinner{
     width:46px;height:46px;border-radius:50%;
     border:4px solid rgba(247,243,233,.2);border-top-color:var(--brass-light);
     animation:spin 1s linear infinite;margin-bottom:18px;
   }
   @keyframes spin{to{transform:rotate(360deg);}}
-
   .scorebig{
     font-family:"Noto Serif Thai",serif;font-weight:700;
-    font-size:clamp(48px,12vw,90px);color:var(--brass-light);line-height:1;
-    margin:8px 0 4px;
+    font-size:clamp(48px,12vw,90px);color:var(--brass-light);line-height:1;margin:8px 0 4px;
   }
-  .scoremsg{font-size:18px;margin-bottom:24px;}
-
+  .scoremsg{font-size:18px;margin-bottom:10px;}
+  .saved-note{font-size:13px;opacity:.7;margin-bottom:22px;}
   .errbox{
     background:rgba(192,57,43,.15);border:1px solid rgba(192,57,43,.5);
     border-radius:14px;padding:14px 18px;font-size:14px;max-width:460px;
-    line-height:1.6;margin-top:10px;display:none;
+    line-height:1.6;margin-top:14px;display:none;
   }
+
+  /* ===== เมนูตั้งค่า ===== */
+  .modal{
+    position:absolute;inset:0;z-index:40;display:none;
+    align-items:center;justify-content:center;
+    background:rgba(11,18,38,.78);backdrop-filter:blur(4px);padding:20px;
+  }
+  .modal.show{display:flex;}
+  .panel{
+    width:min(560px,94vw);max-height:88vh;overflow-y:auto;
+    background:var(--paper);color:var(--ink);border-radius:20px;
+    padding:24px 24px 20px;box-shadow:0 24px 60px rgba(0,0,0,.55);
+  }
+  .panel h2{font-family:"Noto Serif Thai",serif;font-size:24px;margin-bottom:2px;}
+  .panel .psub{font-size:13px;color:var(--ink-soft);margin-bottom:18px;}
+  .group{border-top:1px solid rgba(27,42,74,.12);padding:16px 0 4px;}
+  .group:first-of-type{border-top:none;padding-top:4px;}
+  .group h3{font-size:15px;font-weight:700;color:var(--brass);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:5px;}
+  .field .desc{font-size:12px;color:var(--ink-soft);margin-top:4px;line-height:1.4;}
+  .field input[type=text],.field input[type=url],.field input[type=number],.field textarea{
+    width:100%;border:1px solid rgba(27,42,74,.25);border-radius:10px;
+    padding:10px 12px;font-family:inherit;font-size:14px;color:var(--ink);background:#fff;
+  }
+  .field textarea{min-height:96px;resize:vertical;font-family:ui-monospace,Menlo,monospace;font-size:12px;}
+  .field input:focus,.field textarea:focus{outline:2px solid var(--brass-light);border-color:var(--brass);}
+  .row{display:flex;gap:12px;}
+  .row .field{flex:1;}
+  .toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;}
+  .toggle span{font-size:14px;font-weight:600;}
+  .switch{position:relative;width:48px;height:28px;flex:none;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;inset:0;background:rgba(27,42,74,.25);border-radius:999px;transition:.2s;cursor:pointer;}
+  .slider::before{content:"";position:absolute;width:22px;height:22px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+  .switch input:checked + .slider{background:var(--good);}
+  .switch input:checked + .slider::before{transform:translateX(20px);}
+  .rangewrap{display:flex;align-items:center;gap:10px;}
+  .rangewrap input[type=range]{flex:1;}
+  .rangewrap output{font-size:13px;font-weight:600;min-width:42px;text-align:right;}
+  .status{font-size:13px;padding:8px 12px;border-radius:10px;margin-top:6px;}
+  .status.ok{background:rgba(46,139,87,.14);color:var(--good);}
+  .status.warn{background:rgba(200,150,46,.16);color:#8a6a1c;}
+  .status.err{background:rgba(192,57,43,.14);color:var(--bad);}
+  .panel-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;position:sticky;bottom:0;background:var(--paper);padding-top:8px;}
+  .smallbtn{border:none;border-radius:999px;padding:10px 20px;font-family:inherit;font-weight:600;font-size:15px;cursor:pointer;}
+  .smallbtn.primary{background:var(--ink);color:var(--paper);}
+  .smallbtn.tertiary{background:rgba(27,42,74,.1);color:var(--ink);}
+  .smallbtn.test{background:var(--brass);color:#1b1406;}
 
   @media (max-width:520px){
     #confirmBtn{width:88px;height:88px;font-size:13px;right:16px;bottom:74px;}
@@ -273,7 +333,6 @@
     .scenario .qtext{font-size:18px;}
     .hatlabel{bottom:130px;}
   }
-
   @media (prefers-reduced-motion:reduce){
     *{animation-duration:.001ms !important;transition-duration:.001ms !important;}
   }
@@ -283,13 +342,18 @@
 <div id="stage">
   <video id="cam" autoplay playsinline muted></video>
   <canvas id="overlay"></canvas>
+  <audio id="bgm" loop></audio>
 
   <!-- แถบบน -->
   <div class="topbar">
     <div class="brand">สนุกไปกับหมวกคิด 6 ใบ
       <small>พัฒนาโดย ครูนนทพัทธ์ หิรัญเรือง</small>
     </div>
-    <div class="scoreboard">ข้อ <b id="qnum">1</b>/<span id="qtotal">8</span> · คะแนน <b id="score">0</b></div>
+    <div class="top-right">
+      <button class="iconbtn" id="muteBtn" title="เปิด/ปิดเพลง">♪</button>
+      <button class="iconbtn" id="gearBtnTop" title="ตั้งค่า">⚙</button>
+      <div class="scoreboard">ข้อ <b id="qnum">1</b>/<span id="qtotal">8</span> · คะแนน <b id="score">0</b></div>
+    </div>
   </div>
 
   <!-- สถานการณ์ -->
@@ -302,7 +366,7 @@
     </div>
   </div>
 
-  <!-- ชื่อหมวกที่เลือก -->
+  <!-- ชื่อหมวก -->
   <div class="hatlabel" id="hatLabel" style="display:none;">
     <div><span class="dot" id="hatDot"></span><span class="name" id="hatName">—</span></div>
     <div class="role" id="hatRole">—</div>
@@ -316,8 +380,6 @@
     <div id="confirmRing"></div>
     <div>ยืนยัน<small>แตะค้าง</small></div>
   </div>
-
-  <!-- จุดปลายนิ้ว -->
   <div id="fingerDot"></div>
 
   <!-- เฉลย -->
@@ -325,13 +387,15 @@
     <div class="feedcard" id="feedcard">
       <div class="verdict" id="verdict">—</div>
       <div class="answerline" id="answerline">—</div>
-      <div class="explain"><span class="lead" id="explainLead">เพราะอะไร?</span><br><span id="explainText">—</span></div>
+      <div class="explain"><span class="lead">เพราะอะไร?</span><br><span id="explainText">—</span></div>
       <button class="btn" id="nextBtn">ข้อต่อไป →</button>
     </div>
   </div>
 
-  <!-- หน้าจอเริ่ม -->
+  <!-- หน้าเริ่ม -->
   <div class="screen" id="startScreen">
+    <div class="veil" id="startVeil" style="display:none;"></div>
+    <img id="logoImg" alt="โลโก้" />
     <h1>สนุกไปกับหมวกคิด 6 ใบ</h1>
     <div class="sub">เกมฝึกการคิดด้วยเทคโนโลยี AR · สวมหมวกคิดให้ตรงสถานการณ์</div>
     <div class="dev">พัฒนาโดย ครูนนทพัทธ์ หิรัญเรือง</div>
@@ -344,112 +408,276 @@
       <div class="swatch" style="background:var(--hat-blue)"></div>
     </div>
     <ul class="rules">
-      <li>อ่านสถานการณ์ที่ปรากฏบนจอ แล้วคิดว่าควรใช้การคิดแบบหมวกสีใด</li>
+      <li>อ่านสถานการณ์บนจอ แล้วคิดว่าควรใช้การคิดแบบหมวกสีใด</li>
       <li>หันหน้าไปทางซ้ายหรือขวา เพื่อเลื่อนเลือกหมวกที่จะสวมบนหัว</li>
       <li>เมื่อมั่นใจแล้ว เอามือแตะปุ่ม “ยืนยัน” บนจอค้างไว้ครู่หนึ่ง</li>
       <li>ทุกข้อจะมีคำอธิบายว่าทำไมหมวกสีนั้นจึงเหมาะกับสถานการณ์</li>
     </ul>
-    <button class="bigbtn" id="startBtn">เปิดกล้องแล้วเริ่มเล่น</button>
+    <div class="namefield">
+      <label for="playerName">ชื่อผู้เล่น (ไม่บังคับ)</label>
+      <input type="text" id="playerName" maxlength="40" placeholder="พิมพ์ชื่อของคุณ" />
+    </div>
+    <div class="start-actions">
+      <button class="bigbtn" id="startBtn">เปิดกล้องแล้วเริ่มเล่น</button>
+      <button class="ghostbtn" id="gearBtn">⚙ ตั้งค่า</button>
+    </div>
     <div class="errbox" id="errbox"></div>
     <div class="loadnote">ระบบจะขออนุญาตใช้กล้อง โปรดกด “อนุญาต”</div>
   </div>
 
-  <!-- หน้าจอโหลด -->
+  <!-- หน้าโหลด -->
   <div class="screen hidden" id="loadScreen">
     <div class="spinner"></div>
     <h1 style="font-size:28px;">กำลังเตรียมระบบตรวจจับ…</h1>
     <div class="loadnote" id="loadnote">กำลังโหลดโมเดล AI</div>
   </div>
 
-  <!-- หน้าจอจบ -->
+  <!-- หน้าจบ -->
   <div class="screen hidden" id="endScreen">
     <h1 style="font-size:34px;">เล่นจบแล้ว!</h1>
     <div class="scorebig"><span id="finalScore">0</span>/<span id="finalTotal">8</span></div>
     <div class="scoremsg" id="finalMsg">—</div>
+    <div class="saved-note" id="savedNote"></div>
     <button class="bigbtn" id="restartBtn">เล่นอีกครั้ง</button>
+  </div>
+
+  <!-- เมนูตั้งค่า -->
+  <div class="modal" id="settingsModal">
+    <div class="panel">
+      <h2>ตั้งค่า</h2>
+      <div class="psub">ปรับแต่งหน้าตา เสียง การควบคุม และการบันทึกข้อมูล (ค่าทั้งหมดถูกจำไว้ในเครื่องนี้)</div>
+
+      <div class="group">
+        <h3>🎨 หน้าตาและแบรนด์</h3>
+        <div class="field">
+          <label for="cfgBg">ลิงก์รูปพื้นหลังหน้าเริ่มเกม</label>
+          <input type="url" id="cfgBg" placeholder="https://.../background.jpg" />
+          <div class="desc">ใส่ลิงก์รูป .jpg/.png — เว้นว่างเพื่อใช้พื้นหลังเริ่มต้น</div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="cfgLogo">ลิงก์โลโก้</label>
+            <input type="url" id="cfgLogo" placeholder="https://.../logo.png" />
+          </div>
+          <div class="field">
+            <label for="cfgFav">ลิงก์ favicon</label>
+            <input type="url" id="cfgFav" placeholder="https://.../favicon.png" />
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>🎵 เสียง</h3>
+        <div class="field">
+          <label for="cfgMusic">ลิงก์เพลงประกอบ (.mp3)</label>
+          <input type="url" id="cfgMusic" placeholder="https://.../music.mp3" />
+          <div class="desc">เพลงจะเล่นวนเมื่อเริ่มเกม</div>
+        </div>
+        <div class="toggle">
+          <span>เปิดเพลงประกอบ</span>
+          <label class="switch"><input type="checkbox" id="cfgMusicOn" checked><span class="slider"></span></label>
+        </div>
+        <div class="field">
+          <label for="cfgVol">ระดับเสียง</label>
+          <div class="rangewrap">
+            <input type="range" id="cfgVol" min="0" max="100" value="50" />
+            <output id="cfgVolOut">50%</output>
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>🎯 การควบคุม</h3>
+        <div class="toggle">
+          <span>สลับทิศการหันหน้า (ถ้ารู้สึกว่ากลับด้าน)</span>
+          <label class="switch"><input type="checkbox" id="cfgInvert"><span class="slider"></span></label>
+        </div>
+        <div class="field">
+          <label for="cfgSens">ความไวการหันหน้า</label>
+          <div class="rangewrap">
+            <input type="range" id="cfgSens" min="55" max="72" value="62" />
+            <output id="cfgSensOut">ปานกลาง</output>
+          </div>
+          <div class="desc">ค่าน้อย = หันนิดเดียวก็เปลี่ยน, ค่ามาก = ต้องหันมากขึ้น</div>
+        </div>
+        <div class="field">
+          <label for="cfgHold">เวลายืนยัน (วินาที)</label>
+          <div class="rangewrap">
+            <input type="range" id="cfgHold" min="600" max="2500" step="100" value="1200" />
+            <output id="cfgHoldOut">1.2 วิ</output>
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>☁️ การบันทึกข้อมูล (Firestore)</h3>
+        <div class="field">
+          <label for="cfgFb">วาง Firebase config ที่นี่</label>
+          <textarea id="cfgFb" placeholder='{ "apiKey": "...", "authDomain": "...", "projectId": "...", "storageBucket": "...", "messagingSenderId": "...", "appId": "..." }'></textarea>
+          <div class="desc">ถ้าใส่ค่า ระบบจะบันทึกคะแนนขึ้น Firestore — ถ้าเว้นว่าง จะบันทึกลงในเครื่อง (localStorage) อัตโนมัติ</div>
+        </div>
+        <div class="field">
+          <label for="cfgCol">ชื่อ collection</label>
+          <input type="text" id="cfgCol" placeholder="sixhats_scores" />
+        </div>
+        <button class="smallbtn test" id="testCloudBtn">ทดสอบการเชื่อมต่อ</button>
+        <div class="status warn" id="cloudStatus" style="display:none;"></div>
+      </div>
+
+      <div class="panel-actions">
+        <button class="smallbtn tertiary" id="closeSettings">ยกเลิก</button>
+        <button class="smallbtn primary" id="saveSettings">บันทึก</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <script type="module">
-import { FaceLandmarker, HandLandmarker, FilesetResolver }
-  from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.12";
+/* โหลด MediaPipe แบบ dynamic ตอนเริ่มเล่น เพื่อไม่ให้ปุ่มหยุดทำงานถ้าไลบรารีโหลดไม่ได้ */
 
-/* ---------- ข้อมูลหมวก 6 ใบ ---------- */
+/* ===== หมวก 6 ใบ ===== */
 const HATS = [
-  { key:"white",  name:"หมวกขาว",  role:"ข้อมูล ตัวเลข ข้อเท็จจริงที่เป็นกลาง", color:"#F2F2F2",
+  { key:"white",  name:"หมวกขาว",   role:"ข้อมูล ตัวเลข ข้อเท็จจริงที่เป็นกลาง",   color:"#F2F2F2",
     img:"https://nonthaphathr.github.io/uploadimg/sixhatwhite.png" },
-  { key:"red",    name:"หมวกแดง",  role:"อารมณ์ ความรู้สึก สัญชาตญาณ",        color:"#D64550",
+  { key:"red",    name:"หมวกแดง",   role:"อารมณ์ ความรู้สึก สัญชาตญาณ",          color:"#D64550",
     img:"https://nonthaphathr.github.io/uploadimg/sixhatred.png" },
-  { key:"black",  name:"หมวกดำ",   role:"ข้อควรระวัง จุดอ่อน ความเสี่ยง",      color:"#2B2B2B",
+  { key:"black",  name:"หมวกดำ",    role:"ข้อควรระวัง จุดอ่อน ความเสี่ยง",        color:"#2B2B2B",
     img:"https://nonthaphathr.github.io/uploadimg/sixhatblack.png" },
-  { key:"yellow", name:"หมวกเหลือง", role:"ข้อดี ประโยชน์ การมองแง่บวก",      color:"#F2C230",
+  { key:"yellow", name:"หมวกเหลือง", role:"ข้อดี ประโยชน์ การมองแง่บวก",          color:"#F2C230",
     img:"https://nonthaphathr.github.io/uploadimg/sixhatyellow.png" },
-  { key:"green",  name:"หมวกเขียว", role:"ความคิดสร้างสรรค์ ไอเดียใหม่ ทางเลือก", color:"#3CA55C",
+  { key:"green",  name:"หมวกเขียว",  role:"ความคิดสร้างสรรค์ ไอเดียใหม่ ทางเลือก",  color:"#3CA55C",
     img:"https://nonthaphathr.github.io/uploadimg/sixhatgreen.png" },
-  { key:"blue",   name:"หมวกฟ้า",   role:"ควบคุม จัดระบบ ภาพรวม กระบวนการคิด",  color:"#2E6FC7",
+  { key:"blue",   name:"หมวกฟ้า",    role:"ควบคุม จัดระบบ ภาพรวม กระบวนการคิด",    color:"#2E6FC7",
     img:"https://nonthaphathr.github.io/uploadimg/sixhatblue.png" },
 ];
 const HAT_INDEX = Object.fromEntries(HATS.map((h,i)=>[h.key,i]));
 
-/* ---------- สถานการณ์ (เฉลย + คำอธิบาย) ---------- */
+/* ===== สถานการณ์ ===== */
 const SCENARIOS = [
-  { answer:"white",
-    text:"ครูถามในชั้นเรียนว่า “ปีที่ผ่านมาโรงเรียนของเรามีนักเรียนทั้งหมดกี่คน และมาจากตำบลใดบ้าง”",
+  { answer:"white",  text:"ครูถามในชั้นเรียนว่า “ปีที่ผ่านมาโรงเรียนของเรามีนักเรียนทั้งหมดกี่คน และมาจากตำบลใดบ้าง”",
     explain:"หมวกขาวคือการคิดด้วยข้อมูล ข้อเท็จจริง และตัวเลขที่เป็นกลาง โดยไม่ใส่ความรู้สึกหรือความคิดเห็นส่วนตัว" },
-  { answer:"red",
-    text:"เพื่อนเพิ่งเล่าว่าสุนัขที่เลี้ยงมานานเสียชีวิต คุณอยากบอกเพื่อนว่าคุณรู้สึกเสียใจและเห็นใจมากแค่ไหน",
+  { answer:"red",    text:"เพื่อนเพิ่งเล่าว่าสุนัขที่เลี้ยงมานานเสียชีวิต คุณอยากบอกเพื่อนว่าคุณรู้สึกเสียใจและเห็นใจมากแค่ไหน",
     explain:"หมวกแดงคือการแสดงอารมณ์ ความรู้สึก และสัญชาตญาณออกมาตรง ๆ โดยไม่ต้องหาเหตุผลมาอธิบาย" },
-  { answer:"black",
-    text:"ก่อนอนุมัติให้นักเรียนไปเข้าค่ายริมแม่น้ำ ครูต้องพิจารณาอันตรายและความเสี่ยงที่อาจเกิดขึ้น",
+  { answer:"black",  text:"ก่อนอนุมัติให้นักเรียนไปเข้าค่ายริมแม่น้ำ ครูต้องพิจารณาอันตรายและความเสี่ยงที่อาจเกิดขึ้น",
     explain:"หมวกดำคือการคิดอย่างระมัดระวัง มองหาจุดอ่อน ความเสี่ยง และสิ่งที่อาจผิดพลาด เพื่อป้องกันไว้ล่วงหน้า" },
-  { answer:"yellow",
-    text:"คุณกำลังเตรียมนำเสนอเหตุผลว่าทำไมโรงเรียนควรมีแปลงผักของนักเรียน โดยเน้นที่ประโยชน์ที่จะได้รับ",
+  { answer:"yellow", text:"คุณกำลังเตรียมนำเสนอเหตุผลว่าทำไมโรงเรียนควรมีแปลงผักของนักเรียน โดยเน้นที่ประโยชน์ที่จะได้รับ",
     explain:"หมวกเหลืองคือการมองแง่บวก ค้นหาข้อดี คุณค่า และประโยชน์ของสิ่งต่าง ๆ" },
-  { answer:"green",
-    text:"ขยะในโรงอาหารมีจำนวนมาก คุณต้องการไอเดียใหม่ ๆ ที่แปลกและสร้างสรรค์เพื่อช่วยลดขยะ",
+  { answer:"green",  text:"ขยะในโรงอาหารมีจำนวนมาก คุณต้องการไอเดียใหม่ ๆ ที่แปลกและสร้างสรรค์เพื่อช่วยลดขยะ",
     explain:"หมวกเขียวคือการคิดสร้างสรรค์ เสนอทางเลือกใหม่ และไอเดียที่แตกต่างไปจากเดิม" },
-  { answer:"blue",
-    text:"เริ่มประชุมกลุ่มทำโครงงาน คุณต้องวางแผนว่าจะคุยเรื่องใดก่อน–หลัง และคอยสรุปภาพรวมให้ทุกคน",
+  { answer:"blue",   text:"เริ่มประชุมกลุ่มทำโครงงาน คุณต้องวางแผนว่าจะคุยเรื่องใดก่อน–หลัง และคอยสรุปภาพรวมให้ทุกคน",
     explain:"หมวกฟ้าคือการควบคุมและจัดระบบความคิด ดูแลกระบวนการคิด และสรุปภาพรวมทั้งหมด" },
-  { answer:"white",
-    text:"อยากทราบว่าจริง ๆ แล้วเดือนที่ผ่านมาฝนตกกี่วัน เพื่อใช้วางแผนกิจกรรมกลางแจ้ง",
+  { answer:"white",  text:"อยากทราบว่าจริง ๆ แล้วเดือนที่ผ่านมาฝนตกกี่วัน เพื่อใช้วางแผนกิจกรรมกลางแจ้ง",
     explain:"หมวกขาวเน้นข้อมูลและข้อเท็จจริงที่ตรวจสอบได้ เช่น จำนวนวันที่ฝนตกจริง โดยไม่คาดเดา" },
-  { answer:"yellow",
-    text:"มีคนเสนอให้ติดตั้งแผงโซลาร์เซลล์บนหลังคาอาคารเรียน คุณอยากชี้ให้เห็นข้อดีและผลดีในระยะยาว",
+  { answer:"yellow", text:"มีคนเสนอให้ติดตั้งแผงโซลาร์เซลล์บนหลังคาอาคารเรียน คุณอยากชี้ให้เห็นข้อดีและผลดีในระยะยาว",
     explain:"หมวกเหลืองมองหาประโยชน์และข้อดี เช่น ช่วยประหยัดค่าไฟและเป็นมิตรกับสิ่งแวดล้อม" },
 ];
 
-/* ---------- ตัวแปรหลัก ---------- */
+/* ===== ตัวช่วย ===== */
 const $ = s => document.querySelector(s);
-const stage = $("#stage");
-const video = $("#cam");
-const overlay = $("#overlay");
-const ctx = overlay.getContext("2d");
+const stage=$("#stage"), video=$("#cam"), overlay=$("#overlay"), ctx=overlay.getContext("2d");
+const bgm=$("#bgm");
 
+/* ===== localStorage แบบปลอดภัย (กันพังในบางสภาพแวดล้อม) ===== */
+const memStore={};
+function lsGet(k){ try{return localStorage.getItem(k);}catch(e){return (k in memStore)?memStore[k]:null;} }
+function lsSet(k,v){ try{localStorage.setItem(k,v);}catch(e){memStore[k]=v;} }
+
+/* ===== ค่าตั้งค่า ===== */
+const DEFAULTS={
+  bgImage:"", logo:"", favicon:"",
+  musicUrl:"", musicVol:50, musicOn:true,
+  invertTurn:false, turnThr:62, holdMs:1200,
+  firebaseConfig:"", collection:"sixhats_scores"
+};
+let settings={...DEFAULTS};
+function loadSettings(){
+  try{ const raw=lsGet("sixhats_settings"); if(raw) settings={...DEFAULTS,...JSON.parse(raw)};}catch(e){}
+}
+function saveSettingsStore(){ lsSet("sixhats_settings",JSON.stringify(settings)); }
+
+/* ===== สถานะเกม ===== */
 let faceLandmarker=null, handLandmarker=null;
-let running=false, phase="idle";      // idle | question | feedback | end
-let selected=0;                       // index ของหมวกที่เลือก
-let yawArmed=true;                    // ระบบหน่วงการเลื่อนหมวก
+let running=false, phase="idle";
+let selected=0, yawArmed=true;
 let order=[], qi=0, score=0;
-const HOLD_MS=1200;
 let holdStart=0;
 const hatImgs=[];
 
-/* ---------- โหลดรูปหมวก ---------- */
-function preloadHats(){
-  return Promise.all(HATS.map(h=>new Promise(res=>{
-    const im=new Image();
-    im.crossOrigin="anonymous";
-    im.onload=()=>res(im);
-    im.onerror=()=>res(null);   // ถ้ารูปโหลดไม่ได้ ก็ข้ามไป (จะวาดวงกลมสีแทน)
-    im.src=h.img;
-  }))).then(arr=>{arr.forEach((im,i)=>hatImgs[i]=im);});
+/* ===== Cloud (Firestore) ===== */
+let fbApp=null, db=null, fs=null, cloudReady=false;
+function parseConfig(raw){
+  if(!raw||!raw.trim()) return null;
+  try{return JSON.parse(raw);}catch(e){}
+  try{
+    let s=raw.replace(/([{,]\s*)([A-Za-z0-9_]+)\s*:/g,'$1"$2":').replace(/'/g,'"').replace(/,\s*}/g,'}');
+    return JSON.parse(s);
+  }catch(e){return null;}
+}
+async function initCloud(){
+  cloudReady=false; db=null;
+  const cfg=parseConfig(settings.firebaseConfig);
+  if(!cfg) return {ok:false,reason:"no-config"};
+  try{
+    const appMod=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+    const fsMod =await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    fbApp=appMod.getApps && appMod.getApps().length ? appMod.getApps()[0] : appMod.initializeApp(cfg);
+    db=fsMod.getFirestore(fbApp); fs=fsMod; cloudReady=true;
+    return {ok:true};
+  }catch(e){ return {ok:false,reason:(e&&e.message)||String(e)}; }
+}
+async function saveRecord(rec){
+  if(cloudReady && db && fs){
+    try{
+      await fs.addDoc(fs.collection(db, settings.collection||"sixhats_scores"),
+        {...rec, createdAt: fs.serverTimestamp()});
+      return "cloud";
+    }catch(e){ /* ตกไปใช้ local */ }
+  }
+  try{
+    const key="sixhats_scores";
+    const arr=JSON.parse(lsGet(key)||"[]"); arr.push(rec); lsSet(key,JSON.stringify(arr));
+  }catch(e){}
+  return "local";
 }
 
-/* ---------- สร้างแถบหมวก ---------- */
+/* ===== ใช้งานค่าตั้งค่า ===== */
+function applySettings(){
+  // favicon
+  if(settings.favicon){ $("#faviconLink").href=settings.favicon; }
+  // โลโก้
+  const logo=$("#logoImg");
+  if(settings.logo){ logo.src=settings.logo; logo.style.display="block"; }
+  else{ logo.style.display="none"; }
+  // พื้นหลังหน้าเริ่ม
+  const ss=$("#startScreen"), veil=$("#startVeil");
+  if(settings.bgImage){
+    ss.style.backgroundImage=`linear-gradient(rgba(11,18,38,.35),rgba(11,18,38,.35)), url("${settings.bgImage}")`;
+    veil.style.display="block";
+  }else{
+    ss.style.backgroundImage="";
+    veil.style.display="none";
+  }
+  // เพลง
+  bgm.volume=Math.max(0,Math.min(1,settings.musicVol/100));
+  if(settings.musicUrl && bgm.src!==settings.musicUrl) bgm.src=settings.musicUrl;
+  updateMuteBtn();
+}
+function updateMuteBtn(){
+  const b=$("#muteBtn");
+  const on=settings.musicOn && !!settings.musicUrl;
+  b.textContent=on?"♪":"🔇";
+  b.style.opacity=on?"1":".6";
+}
+function tryPlayMusic(){
+  if(settings.musicOn && settings.musicUrl){
+    bgm.play().catch(()=>{});
+  }
+}
+
+/* ===== แถบหมวก ===== */
 function buildCarousel(){
   const c=$("#carousel"); c.innerHTML="";
-  HATS.forEach((h,i)=>{
+  HATS.forEach(h=>{
     const chip=document.createElement("div");
     chip.className="hatchip";
     chip.innerHTML=`<div class="swatch" style="background:${h.color}"></div>`;
@@ -459,28 +687,32 @@ function buildCarousel(){
 function refreshHatUI(){
   document.querySelectorAll(".hatchip").forEach((c,i)=>c.classList.toggle("active",i===selected));
   const h=HATS[selected];
-  $("#hatName").textContent=h.name;
-  $("#hatRole").textContent=h.role;
-  $("#hatDot").style.background=h.color;
+  $("#hatName").textContent=h.name; $("#hatRole").textContent=h.role; $("#hatDot").style.background=h.color;
 }
-function selectDelta(d){
-  selected=(selected+d+HATS.length)%HATS.length;
-  refreshHatUI();
+function selectDelta(d){ selected=(selected+d+HATS.length)%HATS.length; refreshHatUI(); }
+
+/* ===== โหลดรูปหมวก ===== */
+function preloadHats(){
+  return Promise.all(HATS.map(h=>new Promise(res=>{
+    const im=new Image(); im.crossOrigin="anonymous";
+    im.onload=()=>res(im); im.onerror=()=>res(null); im.src=h.img;
+  }))).then(arr=>arr.forEach((im,i)=>hatImgs[i]=im));
 }
 
-/* ---------- เริ่มกล้อง + โมเดล ---------- */
+/* ===== เริ่มกล้อง + โมเดล ===== */
 async function init(){
   $("#startScreen").classList.add("hidden");
   $("#loadScreen").classList.remove("hidden");
+  tryPlayMusic();
   try{
     $("#loadnote").textContent="กำลังขอสิทธิ์ใช้กล้อง…";
     const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:1280,height:720},audio:false});
-    video.srcObject=stream;
-    await video.play();
+    video.srcObject=stream; await video.play();
 
     $("#loadnote").textContent="กำลังโหลดโมเดลตรวจจับใบหน้าและมือ…";
-    const vision=await FilesetResolver.forVisionTasks(
-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.12/wasm");
+    const { FaceLandmarker, HandLandmarker, FilesetResolver } =
+      await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.12");
+    const vision=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.12/wasm");
     faceLandmarker=await FaceLandmarker.createFromOptions(vision,{
       baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",delegate:"GPU"},
       runningMode:"VIDEO",numFaces:1});
@@ -490,105 +722,83 @@ async function init(){
 
     resizeCanvas();
     $("#loadScreen").classList.add("hidden");
-    startGame();
-    running=true;
-    requestAnimationFrame(loop);
+    startGame(); running=true; requestAnimationFrame(loop);
   }catch(err){
     $("#loadScreen").classList.add("hidden");
     $("#startScreen").classList.remove("hidden");
-    const box=$("#errbox");
-    box.style.display="block";
-    box.innerHTML="เปิดกล้องไม่สำเร็จ: "+(err && err.message ? err.message : err)+
-      "<br><br>หากเปิดไฟล์นี้จากเครื่องโดยตรง กล้องอาจถูกบล็อก แนะนำให้นำไฟล์ไปวางบนเว็บ (เช่น github.io ของคุณครู) แล้วเปิดผ่าน https จึงจะใช้กล้องได้";
+    const box=$("#errbox"); box.style.display="block";
+    box.innerHTML="เปิดกล้องไม่สำเร็จ: "+((err&&err.message)?err.message:err)+
+      "<br><br>หากเปิดไฟล์จากเครื่องโดยตรง กล้องอาจถูกบล็อก แนะนำให้นำไฟล์ไปวางบนเว็บ (เช่น github.io) แล้วเปิดผ่าน https";
   }
 }
-
-function resizeCanvas(){
-  overlay.width=stage.clientWidth;
-  overlay.height=stage.clientHeight;
-}
+function resizeCanvas(){ overlay.width=stage.clientWidth; overlay.height=stage.clientHeight; }
 window.addEventListener("resize",resizeCanvas);
 
-/* ---------- เริ่มเกม / โหลดข้อ ---------- */
+/* ===== เกม ===== */
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function startGame(){
-  order=shuffle([...Array(SCENARIOS.length).keys()]);
-  qi=0; score=0;
+  order=shuffle([...Array(SCENARIOS.length).keys()]); qi=0; score=0;
   $("#qtotal").textContent=SCENARIOS.length;
-  $("#scenarioCard").style.display="";
-  $("#hatLabel").style.display="";
-  $("#carousel").style.display="";
-  $("#confirmBtn").style.display="";
+  $("#scenarioCard").style.display=""; $("#hatLabel").style.display="";
+  $("#carousel").style.display=""; $("#confirmBtn").style.display="";
   loadQuestion();
 }
 function loadQuestion(){
   const sc=SCENARIOS[order[qi]];
-  $("#qtext").textContent=sc.text;
-  $("#qnum").textContent=qi+1;
-  $("#score").textContent=score;
-  selected=0; refreshHatUI();
-  holdStart=0; setRing(0);
-  phase="question";
+  $("#qtext").textContent=sc.text; $("#qnum").textContent=qi+1; $("#score").textContent=score;
+  selected=0; refreshHatUI(); holdStart=0; setRing(0); phase="question";
 }
-
-/* ---------- ยืนยันคำตอบ ---------- */
 function confirmAnswer(){
   if(phase!=="question") return;
-  phase="feedback";
-  setRing(0); holdStart=0;
-  const sc=SCENARIOS[order[qi]];
-  const chosen=HATS[selected];
-  const correct=chosen.key===sc.answer;
-  if(correct) score++;
+  phase="feedback"; setRing(0); holdStart=0;
+  const sc=SCENARIOS[order[qi]], chosen=HATS[selected];
+  const correct=chosen.key===sc.answer; if(correct) score++;
   $("#score").textContent=score;
-
-  const card=$("#feedcard");
-  card.classList.remove("correct","wrong");
+  const card=$("#feedcard"); card.classList.remove("correct","wrong");
   card.classList.add(correct?"correct":"wrong");
   $("#verdict").textContent=correct?"ถูกต้อง!":"ลองคิดใหม่นะ";
   const ans=HATS[HAT_INDEX[sc.answer]];
-  $("#answerline").innerHTML = correct
+  $("#answerline").innerHTML=correct
     ? `คุณเลือก <b>${chosen.name}</b> ได้เหมาะกับสถานการณ์`
     : `คุณเลือก <b>${chosen.name}</b> · คำตอบที่เหมาะคือ <b>${ans.name}</b>`;
   $("#explainText").textContent=sc.explain;
   $("#feedback").classList.add("show");
 }
 function nextQuestion(){
-  $("#feedback").classList.remove("show");
-  qi++;
+  $("#feedback").classList.remove("show"); qi++;
   if(qi>=SCENARIOS.length){ endGame(); return; }
   loadQuestion();
 }
-function endGame(){
+async function endGame(){
   phase="end";
-  $("#scenarioCard").style.display="none";
-  $("#hatLabel").style.display="none";
-  $("#carousel").style.display="none";
-  $("#confirmBtn").style.display="none";
-  $("#finalScore").textContent=score;
-  $("#finalTotal").textContent=SCENARIOS.length;
+  $("#scenarioCard").style.display="none"; $("#hatLabel").style.display="none";
+  $("#carousel").style.display="none"; $("#confirmBtn").style.display="none";
+  $("#finalScore").textContent=score; $("#finalTotal").textContent=SCENARIOS.length;
   const pct=score/SCENARIOS.length;
-  $("#finalMsg").textContent =
-    pct===1 ? "ยอดเยี่ยม! เข้าใจหมวกคิดทุกใบเลย" :
-    pct>=0.7 ? "เก่งมาก! เข้าใจการคิดแต่ละแบบได้ดี" :
-    pct>=0.4 ? "ทำได้ดี ลองทบทวนหมวกที่ยังสับสนอีกครั้ง" :
-               "ไม่เป็นไร ลองเล่นอีกครั้งเพื่อทำความรู้จักหมวกแต่ละใบ";
+  $("#finalMsg").textContent=
+    pct===1?"ยอดเยี่ยม! เข้าใจหมวกคิดทุกใบเลย":
+    pct>=0.7?"เก่งมาก! เข้าใจการคิดแต่ละแบบได้ดี":
+    pct>=0.4?"ทำได้ดี ลองทบทวนหมวกที่ยังสับสนอีกครั้ง":
+             "ไม่เป็นไร ลองเล่นอีกครั้งเพื่อทำความรู้จักหมวกแต่ละใบ";
   $("#endScreen").classList.remove("hidden");
+  // บันทึกผล
+  const name=($("#playerName").value||"").trim()||"ผู้เล่น";
+  const note=$("#savedNote"); note.textContent="กำลังบันทึกผล…";
+  const where=await saveRecord({name,score,total:SCENARIOS.length,ts:Date.now()});
+  note.textContent = where==="cloud" ? "✓ บันทึกคะแนนขึ้น Firestore แล้ว" : "✓ บันทึกคะแนนในเครื่องนี้ (localStorage) แล้ว";
 }
-
-/* ---------- วงแหวนยืนยัน ---------- */
 function setRing(p){ $("#confirmRing").style.setProperty("--p",p); }
 
-/* ---------- ลูปตรวจจับ ---------- */
+/* ===== ลูปตรวจจับ ===== */
 function loop(){
   if(!running) return;
   if(video.readyState>=2){
     const t=performance.now();
     let face=null, hand=null;
-    try{ face=faceLandmarker.detectForVideo(video,t);}catch(e){}
-    try{ hand=handLandmarker.detectForVideo(video,t);}catch(e){}
+    try{face=faceLandmarker.detectForVideo(video,t);}catch(e){}
+    try{hand=handLandmarker.detectForVideo(video,t);}catch(e){}
     ctx.clearRect(0,0,overlay.width,overlay.height);
-    if(face && face.faceLandmarks.length){
+    if(face&&face.faceLandmarks.length){
       drawHat(face.faceLandmarks[0]);
       if(phase==="question") handleYaw(face.faceLandmarks[0]);
     }
@@ -597,100 +807,137 @@ function loop(){
   requestAnimationFrame(loop);
 }
 
-/* ---------- วาดหมวกบนหัว ---------- */
+/* ===== วาดหมวก ===== */
 function drawHat(lm){
-  const W=overlay.width, H=overlay.height;
-  const left=lm[234], right=lm[454], top=lm[10];
-  const eyeL=lm[33], eyeR=lm[263];
+  const W=overlay.width,H=overlay.height;
+  const left=lm[234],right=lm[454],top=lm[10],eyeL=lm[33],eyeR=lm[263];
   const faceW=Math.hypot((right.x-left.x)*W,(right.y-left.y)*H);
-  const cx=top.x*W, cy=top.y*H;
+  const cx=top.x*W,cy=top.y*H;
   const roll=Math.atan2((eyeR.y-eyeL.y)*H,(eyeR.x-eyeL.x)*W);
-  const hatW=faceW*2.05;
-  const img=hatImgs[selected];
-
-  ctx.save();
-  ctx.translate(cx,cy);
-  ctx.rotate(roll);
-  if(img){
-    const hatH=hatW*(img.naturalHeight/img.naturalWidth || 0.8);
-    ctx.drawImage(img,-hatW/2,-hatH*0.96,hatW,hatH);
-  }else{
-    // สำรอง: วาดวงกลมสีหมวกถ้ารูปโหลดไม่ได้
-    ctx.fillStyle=HATS[selected].color;
-    ctx.beginPath();ctx.arc(0,-hatW*0.35,hatW*0.42,0,Math.PI*2);ctx.fill();
-  }
+  const hatW=faceW*2.05, img=hatImgs[selected];
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(roll);
+  if(img){ const hatH=hatW*((img.naturalHeight/img.naturalWidth)||0.8); ctx.drawImage(img,-hatW/2,-hatH*0.96,hatW,hatH); }
+  else{ ctx.fillStyle=HATS[selected].color; ctx.beginPath(); ctx.arc(0,-hatW*0.35,hatW*0.42,0,Math.PI*2); ctx.fill(); }
   ctx.restore();
 }
 
-/* ---------- หันหน้าเลือกหมวก ---------- */
+/* ===== หันหน้าเลือกหมวก (ทิศแก้ไขแล้ว) ===== */
 function handleYaw(lm){
-  const left=lm[234], right=lm[454], nose=lm[1];
-  const span=right.x-left.x;
-  if(Math.abs(span)<1e-4) return;
-  const ratio=(nose.x-left.x)/span;     // ~0.5 = มองตรง
-  if(ratio>0.62 && yawArmed){ selectDelta(+1); yawArmed=false; }
-  else if(ratio<0.38 && yawArmed){ selectDelta(-1); yawArmed=false; }
-  else if(ratio>0.45 && ratio<0.55){ yawArmed=true; }   // กลับมาตรงกลางแล้วค่อยเลื่อนใหม่
+  const left=lm[234],right=lm[454],nose=lm[1];
+  const span=right.x-left.x; if(Math.abs(span)<1e-4) return;
+  const ratio=(nose.x-left.x)/span;          // ~0.5 = มองตรง
+  const highThr=settings.turnThr/100;        // เช่น 0.62
+  const lowThr=1-highThr;                     // เช่น 0.38
+  const dir=settings.invertTurn?-1:1;
+  // ฐานที่ถูกต้อง: หันขวา (ratio ต่ำ) → หมวกถัดไป (+1), หันซ้าย (ratio สูง) → หมวกก่อนหน้า (-1)
+  if(ratio<lowThr && yawArmed){ selectDelta(1*dir); yawArmed=false; }
+  else if(ratio>highThr && yawArmed){ selectDelta(-1*dir); yawArmed=false; }
+  else if(ratio>0.45 && ratio<0.55){ yawArmed=true; }
 }
 
-/* ---------- มือแตะปุ่มยืนยัน ---------- */
+/* ===== มือยืนยัน ===== */
 function handleHand(hand){
-  const dot=$("#fingerDot");
-  const btn=$("#confirmBtn");
-  if(phase!=="question" || !hand || !hand.landmarks.length){
-    dot.style.display="none";
-    if(holdStart){ holdStart=0; setRing(0); }
-    return;
+  const dot=$("#fingerDot"), btn=$("#confirmBtn");
+  if(phase!=="question"||!hand||!hand.landmarks.length){
+    dot.style.display="none"; if(holdStart){holdStart=0;setRing(0);} return;
   }
-  // ปลายนิ้วชี้ = 8 ; พิกัดภาพถูกสะท้อนกระจก จึงใช้ (1-x)
   const tip=hand.landmarks[0][8];
-  const sx=(1-tip.x)*stage.clientWidth;
-  const sy=tip.y*stage.clientHeight;
-  dot.style.display="block";
-  dot.style.left=sx+"px";
-  dot.style.top=sy+"px";
-
-  const r=btn.getBoundingClientRect();
-  const st=stage.getBoundingClientRect();
-  const bx=r.left-st.left+r.width/2;
-  const by=r.top-st.top+r.height/2;
+  const sx=(1-tip.x)*stage.clientWidth, sy=tip.y*stage.clientHeight;
+  dot.style.display="block"; dot.style.left=sx+"px"; dot.style.top=sy+"px";
+  const r=btn.getBoundingClientRect(), st=stage.getBoundingClientRect();
+  const bx=r.left-st.left+r.width/2, by=r.top-st.top+r.height/2;
   const dist=Math.hypot(sx-bx,sy-by);
-
-  if(dist < r.width*0.7){
+  if(dist<r.width*0.7){
     if(!holdStart) holdStart=performance.now();
-    const p=Math.min(100,(performance.now()-holdStart)/HOLD_MS*100);
-    setRing(p);
-    dot.style.borderColor="var(--good)";
-    if(p>=100){ confirmAnswer(); }
-  }else{
-    holdStart=0; setRing(0);
-    dot.style.borderColor="var(--brass-light)";
-  }
+    const p=Math.min(100,(performance.now()-holdStart)/settings.holdMs*100);
+    setRing(p); dot.style.borderColor="var(--good)";
+    if(p>=100) confirmAnswer();
+  }else{ holdStart=0; setRing(0); dot.style.borderColor="var(--brass-light)"; }
 }
 
-/* ---------- แป้นพิมพ์สำรอง (ทดสอบโดยไม่ใช้กล้องได้) ---------- */
+/* ===== แป้นพิมพ์สำรอง ===== */
 window.addEventListener("keydown",e=>{
+  if($("#settingsModal").classList.contains("show")) return;
   if(phase==="question"){
-    if(e.key==="ArrowRight"){selectDelta(+1);}
-    else if(e.key==="ArrowLeft"){selectDelta(-1);}
+    if(e.key==="ArrowRight") selectDelta(+1);
+    else if(e.key==="ArrowLeft") selectDelta(-1);
     else if(e.key==="Enter"||e.key===" "){e.preventDefault();confirmAnswer();}
-  }else if(phase==="feedback" && (e.key==="Enter"||e.key===" ")){nextQuestion();}
+  }else if(phase==="feedback"&&(e.key==="Enter"||e.key===" ")) nextQuestion();
 });
-// คลิกปุ่มได้ด้วย (สำหรับทดสอบ/สำรอง)
 $("#confirmBtn").addEventListener("click",()=>{ if(phase==="question") confirmAnswer(); });
 
-/* ---------- ปุ่มควบคุม ---------- */
+/* ===== เมนูตั้งค่า : เปิด/ปิด/อ่าน/เขียน ===== */
+function openSettings(){
+  $("#cfgBg").value=settings.bgImage;
+  $("#cfgLogo").value=settings.logo;
+  $("#cfgFav").value=settings.favicon;
+  $("#cfgMusic").value=settings.musicUrl;
+  $("#cfgMusicOn").checked=settings.musicOn;
+  $("#cfgVol").value=settings.musicVol; $("#cfgVolOut").textContent=settings.musicVol+"%";
+  $("#cfgInvert").checked=settings.invertTurn;
+  $("#cfgSens").value=settings.turnThr; updateSensOut();
+  $("#cfgHold").value=settings.holdMs; $("#cfgHoldOut").textContent=(settings.holdMs/1000).toFixed(1)+" วิ";
+  $("#cfgFb").value=settings.firebaseConfig;
+  $("#cfgCol").value=settings.collection;
+  $("#cloudStatus").style.display="none";
+  $("#settingsModal").classList.add("show");
+}
+function closeSettings(){ $("#settingsModal").classList.remove("show"); }
+function updateSensOut(){
+  const v=+$("#cfgSens").value;
+  $("#cfgSensOut").textContent = v<=58?"ไว":v>=68?"ต้องหันมาก":"ปานกลาง";
+}
+function readSettingsFromForm(){
+  settings.bgImage=$("#cfgBg").value.trim();
+  settings.logo=$("#cfgLogo").value.trim();
+  settings.favicon=$("#cfgFav").value.trim();
+  settings.musicUrl=$("#cfgMusic").value.trim();
+  settings.musicOn=$("#cfgMusicOn").checked;
+  settings.musicVol=+$("#cfgVol").value;
+  settings.invertTurn=$("#cfgInvert").checked;
+  settings.turnThr=+$("#cfgSens").value;
+  settings.holdMs=+$("#cfgHold").value;
+  settings.firebaseConfig=$("#cfgFb").value.trim();
+  settings.collection=$("#cfgCol").value.trim()||"sixhats_scores";
+}
+async function onSaveSettings(){
+  readSettingsFromForm(); saveSettingsStore(); applySettings();
+  if(settings.musicOn) tryPlayMusic(); else bgm.pause();
+  if(settings.firebaseConfig){ await initCloud(); }
+  closeSettings();
+}
+async function onTestCloud(){
+  readSettingsFromForm();
+  const s=$("#cloudStatus"); s.style.display="block"; s.className="status warn"; s.textContent="กำลังทดสอบ…";
+  if(!settings.firebaseConfig){ s.className="status warn"; s.textContent="ไม่มี config — ระบบจะบันทึกลงในเครื่อง (localStorage)"; return; }
+  const r=await initCloud();
+  if(r.ok){ s.className="status ok"; s.textContent="✓ เชื่อมต่อ Firestore สำเร็จ พร้อมบันทึกขึ้น cloud"; }
+  else if(r.reason==="no-config"){ s.className="status warn"; s.textContent="config อ่านไม่ออก ตรวจรูปแบบ JSON อีกครั้ง — ระหว่างนี้ใช้ localStorage"; }
+  else{ s.className="status err"; s.textContent="เชื่อมต่อไม่สำเร็จ: "+r.reason+" (จะใช้ localStorage แทน)"; }
+}
+
+/* ===== ปุ่มควบคุม ===== */
 $("#startBtn").addEventListener("click",init);
 $("#nextBtn").addEventListener("click",nextQuestion);
-$("#restartBtn").addEventListener("click",()=>{
-  $("#endScreen").classList.add("hidden");
-  startGame();
+$("#restartBtn").addEventListener("click",()=>{ $("#endScreen").classList.add("hidden"); startGame(); });
+$("#gearBtn").addEventListener("click",openSettings);
+$("#gearBtnTop").addEventListener("click",openSettings);
+$("#closeSettings").addEventListener("click",closeSettings);
+$("#saveSettings").addEventListener("click",onSaveSettings);
+$("#testCloudBtn").addEventListener("click",onTestCloud);
+$("#cfgVol").addEventListener("input",e=>{ $("#cfgVolOut").textContent=e.target.value+"%"; bgm.volume=e.target.value/100; });
+$("#cfgSens").addEventListener("input",updateSensOut);
+$("#cfgHold").addEventListener("input",e=>{ $("#cfgHoldOut").textContent=(e.target.value/1000).toFixed(1)+" วิ"; });
+$("#muteBtn").addEventListener("click",()=>{
+  settings.musicOn=!settings.musicOn; saveSettingsStore(); updateMuteBtn();
+  if(settings.musicOn) tryPlayMusic(); else bgm.pause();
 });
+$("#settingsModal").addEventListener("click",e=>{ if(e.target.id==="settingsModal") closeSettings(); });
 
-/* ---------- เตรียมพร้อม ---------- */
+/* ===== เริ่มต้น ===== */
+loadSettings();
+applySettings();
 buildCarousel();
 refreshHatUI();
 preloadHats();
-</script>
-</body>
-</html>
+if(settings.firebaseConfig){ initCloud(); }
