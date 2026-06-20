@@ -147,16 +147,16 @@
 
   /* ===== ปุ่มยืนยัน ===== */
   #confirmBtn{
-    position:absolute;right:26px;bottom:84px;
-    width:104px;height:104px;border-radius:50%;
+    position:absolute;right:24px;bottom:80px;
+    width:140px;height:140px;border-radius:50%;
     z-index:6;display:grid;place-items:center;text-align:center;
     background:rgba(200,150,46,.18);
-    border:2px solid var(--brass-light);
-    color:var(--paper);font-weight:700;font-size:15px;line-height:1.2;
+    border:3px solid var(--brass-light);
+    color:var(--paper);font-weight:700;font-size:18px;line-height:1.25;
     backdrop-filter:blur(4px);cursor:pointer;user-select:none;
-    box-shadow:0 8px 24px rgba(0,0,0,.45);
+    box-shadow:0 8px 28px rgba(0,0,0,.45);
   }
-  #confirmBtn small{display:block;font-weight:400;font-size:11px;opacity:.8;margin-top:2px;}
+  #confirmBtn small{display:block;font-weight:400;font-size:13px;opacity:.8;margin-top:3px;}
   #confirmRing{
     position:absolute;inset:-6px;border-radius:50%;pointer-events:none;
     background:conic-gradient(var(--brass-light) calc(var(--p,0)*1%), transparent 0);
@@ -184,6 +184,10 @@
     animation:pop .35s cubic-bezier(.2,.9,.3,1.3);
   }
   @keyframes pop{from{transform:scale(.85);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .feedcard.exit-right{animation:slideOutRight .38s ease-in forwards;}
+  .feedcard.exit-left{animation:slideOutLeft .38s ease-in forwards;}
+  @keyframes slideOutRight{to{transform:translateX(120%) rotate(6deg);opacity:0;}}
+  @keyframes slideOutLeft{to{transform:translateX(-120%) rotate(-6deg);opacity:0;}}
   .feedcard .verdict{font-family:"Noto Serif Thai",serif;font-weight:700;font-size:30px;margin-bottom:6px;}
   .feedcard.correct .verdict{color:var(--good);}
   .feedcard.wrong .verdict{color:var(--bad);}
@@ -351,7 +355,7 @@
   .smallbtn.test{background:var(--brass);color:#1b1406;}
 
   @media (max-width:520px){
-    #confirmBtn{width:88px;height:88px;font-size:13px;right:16px;bottom:74px;}
+    #confirmBtn{width:118px;height:118px;font-size:15px;right:14px;bottom:64px;}
     .hatchip{width:40px;height:40px;}
     .hatchip .swatch{width:22px;height:22px;}
     .scenario .qtext{font-size:18px;}
@@ -414,7 +418,7 @@
       <div class="verdict" id="verdict">—</div>
       <div class="answerline" id="answerline">—</div>
       <div class="explain"><span class="lead">เพราะอะไร?</span><br><span id="explainText">—</span></div>
-      <div class="feedhint">↔ สะบัดหน้าซ้ายหรือขวาเร็ว ๆ เพื่อไปข้อต่อไป</div>
+      <div class="feedhint">🙌 ยกแขนแล้วปัดออกด้านข้าง เพื่อไปข้อต่อไป</div>
       <button class="btn" id="nextBtn">ข้อต่อไป →</button>
     </div>
   </div>
@@ -512,11 +516,19 @@
           <label class="switch"><input type="checkbox" id="cfgMusicOn" checked><span class="slider"></span></label>
         </div>
         <div class="field">
-          <label for="cfgVol">ระดับเสียง</label>
+          <label for="cfgVol">ระดับเสียงเพลงประกอบ</label>
           <div class="rangewrap">
             <input type="range" id="cfgVol" min="0" max="100" value="50" />
             <output id="cfgVolOut">50%</output>
           </div>
+        </div>
+        <div class="field">
+          <label for="cfgSfxVol">ระดับเสียงตอบถูก/ตอบผิด</label>
+          <div class="rangewrap">
+            <input type="range" id="cfgSfxVol" min="0" max="100" value="90" />
+            <output id="cfgSfxVolOut">90%</output>
+          </div>
+          <div class="desc">เพลงประกอบจะหรี่ลงชั่วครู่อัตโนมัติเวลามีเสียงตอบถูก/ผิด เพื่อให้ได้ยินชัด</div>
         </div>
       </div>
 
@@ -619,7 +631,7 @@ function lsSet(k,v){ try{localStorage.setItem(k,v);}catch(e){memStore[k]=v;} }
 /* ===== ค่าตั้งค่า ===== */
 const DEFAULTS={
   bgImage:"", logo:"", favicon:"",
-  musicUrl:"", musicVol:50, musicOn:true,
+  musicUrl:"", musicVol:50, musicOn:true, sfxVol:90,
   invertTurn:false, turnThr:62, holdMs:1200,
   firebaseConfig:"", collection:"sixhats_scores"
 };
@@ -798,18 +810,27 @@ function confirmAnswer(){
   $("#explainText").textContent=sc.explain;
   $("#feedback").classList.add("show");
   playSfx(correct);
-  feedbackYawArmed=true; // เตรียมจับการสะบัดหน้าในหน้าคำอธิบาย
+  feedbackArmGesture=true; armHistory=[]; // เตรียมจับการยกแขนปัดในหน้าคำอธิบาย
 }
+let duckTimer=null;
 function playSfx(correct){
   try{
     const el=correct?$("#sfxCorrect"):$("#sfxWrong");
-    el.currentTime=0; el.volume=Math.max(0,Math.min(1,settings.musicVol/100));
+    el.currentTime=0; el.volume=Math.max(0,Math.min(1,settings.sfxVol/100));
     el.play().catch(()=>{});
+    // หรี่เพลงประกอบชั่วคราวเพื่อให้ได้ยินเสียง effect ชัดขึ้น แล้วค่อยคืนระดับเดิม
+    if(settings.musicOn && settings.musicUrl){
+      const fullVol=Math.max(0,Math.min(1,settings.musicVol/100));
+      bgm.volume=fullVol*0.25;
+      clearTimeout(duckTimer);
+      const dur=Math.max(900,(el.duration||1.2)*1000);
+      duckTimer=setTimeout(()=>{ bgm.volume=fullVol; },dur);
+    }
   }catch(e){}
 }
 function nextQuestion(){
   $("#feedback").classList.remove("show"); qi++;
-  swipeHistory=[]; feedbackYawArmed=true;
+  feedbackArmGesture=true; armHistory=[];
   if(qi>=SCENARIOS.length){ endGame(); return; }
   loadQuestion();
 }
@@ -876,7 +897,6 @@ function loop(){
     if(face&&face.faceLandmarks.length){
       drawHat(face.faceLandmarks[0]);
       if(phase==="question") handleYaw(face.faceLandmarks[0]);
-      else if(phase==="feedback") handleFeedbackSwipe(face.faceLandmarks[0]);
     }
     handleHand(hand);
   }
@@ -911,34 +931,53 @@ function handleYaw(lm){
   else if(ratio>0.45 && ratio<0.55){ yawArmed=true; }
 }
 
-/* ===== สะบัดหน้าซ้าย/ขวา เพื่อไปข้อต่อไปตอนอยู่หน้าคำอธิบาย ===== */
-let feedbackYawArmed=true;
-let swipeHistory=[];          // เก็บ ratio + เวลา ไม่กี่เฟรมล่าสุด เพื่อหาความเร็วการสะบัด
-const SWIPE_WINDOW_MS=420;    // ต้องสะบัดจบภายในช่วงเวลานี้
-const SWIPE_DELTA=0.22;       // ระยะ ratio ที่ต้องเปลี่ยนแปลงถึงจะนับว่าเป็นการสะบัด (ไวกว่าการหันเลือกหมวกปกติ)
-function handleFeedbackSwipe(lm){
-  if(!feedbackYawArmed) return;
-  const left=lm[234],right=lm[454],nose=lm[1];
-  const span=right.x-left.x; if(Math.abs(span)<1e-4) return;
-  const ratio=(nose.x-left.x)/span;
+/* ===== ยกแขนแล้วปัดออกข้าง เพื่อไปข้อต่อไปตอนอยู่หน้าคำอธิบาย ===== */
+let feedbackArmGesture=true;
+let armHistory=[];            // เก็บตำแหน่งข้อมือ + เวลา เพื่อหาความเร็วการปัด
+const ARM_WINDOW_MS=500;      // ต้องปัดจบภายในช่วงเวลานี้
+const ARM_DELTA=0.16;         // ระยะ (เทียบสัดส่วนความกว้างจอ) ที่ข้อมือต้องเคลื่อนถึงจะนับว่าเป็นการปัด
+function handleArmSwipe(hand){
+  if(!feedbackArmGesture || !hand || !hand.landmarks.length){ return; }
+  const lm=hand.landmarks[0];
+  const wrist=lm[0];                 // จุดข้อมือ
+  // ใช้ความกว้างของมือ (ข้อมือถึงปลายนิ้วกลาง) ประมาณความสูงที่ถือว่า "ยกแขนขึ้นมาระดับเอว/อก" ในเฟรม
+  const raised = wrist.y < 0.78;      // มือต้องอยู่สูงกว่าขอบล่างจอพอประมาณ ถือว่ายกแขนขึ้น
+  if(!raised){ armHistory=[]; return; }
+  const sx=(1-wrist.x);               // กลับด้านตามภาพสะท้อนกระจก
   const t=performance.now();
-  swipeHistory.push({ratio,t});
-  swipeHistory=swipeHistory.filter(p=>t-p.t<=SWIPE_WINDOW_MS);
-  if(swipeHistory.length<2) return;
-  const first=swipeHistory[0];
-  const delta=ratio-first.ratio;
-  if(Math.abs(delta)>=SWIPE_DELTA){
-    feedbackYawArmed=false;     // กันการสะบัดซ้อนจนกว่าจะไปข้อใหม่
-    swipeHistory=[];
-    nextQuestion();
+  armHistory.push({x:sx,t});
+  armHistory=armHistory.filter(p=>t-p.t<=ARM_WINDOW_MS);
+  if(armHistory.length<2) return;
+  const first=armHistory[0];
+  const delta=sx-first.x;
+  if(Math.abs(delta)>=ARM_DELTA){
+    feedbackArmGesture=false;        // กันการปัดซ้อนจนกว่าจะไปข้อใหม่
+    armHistory=[];
+    const dir = delta>0 ? "right" : "left";
+    playFeedbackExit(dir);
   }
+}
+function playFeedbackExit(dir){
+  const card=$("#feedcard");
+  card.classList.add(dir==="right"?"exit-right":"exit-left");
+  setTimeout(()=>{
+    card.classList.remove("exit-right","exit-left");
+    nextQuestion();
+  },380);
 }
 
 /* ===== มือยืนยัน ===== */
 function handleHand(hand){
   const dot=$("#fingerDot"), btn=$("#confirmBtn");
+  if(phase==="feedback"){ handleArmSwipe(hand); dot.style.display="none"; return; }
   if(phase!=="question"||!hand||!hand.landmarks.length){
-    dot.style.display="none"; if(holdStart){holdStart=0;setRing(0);} return;
+    dot.style.display="none";
+    if(holdStart){
+      // หน่วงการหลุดเล็กน้อย กันนิ้วสั่นใกล้ขอบจอทำให้วงแหวนรีเซ็ตทันที
+      if(!loseGraceStart) loseGraceStart=performance.now();
+      if(performance.now()-loseGraceStart>250){ holdStart=0; setRing(0); loseGraceStart=0; }
+    }
+    return;
   }
   const tip=hand.landmarks[0][8];
   const sx=(1-tip.x)*stage.clientWidth, sy=tip.y*stage.clientHeight;
@@ -946,13 +985,20 @@ function handleHand(hand){
   const r=btn.getBoundingClientRect(), st=stage.getBoundingClientRect();
   const bx=r.left-st.left+r.width/2, by=r.top-st.top+r.height/2;
   const dist=Math.hypot(sx-bx,sy-by);
-  if(dist<r.width*0.7){
+  const catchRadius=r.width*0.95;   // รัศมีจับกว้างกว่าตัวปุ่มจริง กันหลุดง่ายตอนนิ้วสั่นใกล้ขอบจอ
+  if(dist<catchRadius){
+    loseGraceStart=0;
     if(!holdStart) holdStart=performance.now();
     const p=Math.min(100,(performance.now()-holdStart)/settings.holdMs*100);
     setRing(p); dot.style.borderColor="var(--good)";
     if(p>=100) confirmAnswer();
-  }else{ holdStart=0; setRing(0); dot.style.borderColor="var(--brass-light)"; }
+  }else{
+    if(!loseGraceStart) loseGraceStart=performance.now();
+    if(performance.now()-loseGraceStart>250){ holdStart=0; setRing(0); loseGraceStart=0; }
+    dot.style.borderColor="var(--brass-light)";
+  }
 }
+let loseGraceStart=0;
 
 /* ===== แป้นพิมพ์สำรอง ===== */
 window.addEventListener("keydown",e=>{
@@ -973,6 +1019,7 @@ function openSettings(){
   $("#cfgMusic").value=settings.musicUrl;
   $("#cfgMusicOn").checked=settings.musicOn;
   $("#cfgVol").value=settings.musicVol; $("#cfgVolOut").textContent=settings.musicVol+"%";
+  $("#cfgSfxVol").value=settings.sfxVol; $("#cfgSfxVolOut").textContent=settings.sfxVol+"%";
   $("#cfgInvert").checked=settings.invertTurn;
   $("#cfgSens").value=settings.turnThr; updateSensOut();
   $("#cfgHold").value=settings.holdMs; $("#cfgHoldOut").textContent=(settings.holdMs/1000).toFixed(1)+" วิ";
@@ -993,6 +1040,7 @@ function readSettingsFromForm(){
   settings.musicUrl=$("#cfgMusic").value.trim();
   settings.musicOn=$("#cfgMusicOn").checked;
   settings.musicVol=+$("#cfgVol").value;
+  settings.sfxVol=+$("#cfgSfxVol").value;
   settings.invertTurn=$("#cfgInvert").checked;
   settings.turnThr=+$("#cfgSens").value;
   settings.holdMs=+$("#cfgHold").value;
@@ -1025,6 +1073,7 @@ $("#closeSettings").addEventListener("click",closeSettings);
 $("#saveSettings").addEventListener("click",onSaveSettings);
 $("#testCloudBtn").addEventListener("click",onTestCloud);
 $("#cfgVol").addEventListener("input",e=>{ $("#cfgVolOut").textContent=e.target.value+"%"; bgm.volume=e.target.value/100; });
+$("#cfgSfxVol").addEventListener("input",e=>{ $("#cfgSfxVolOut").textContent=e.target.value+"%"; });
 $("#cfgSens").addEventListener("input",updateSensOut);
 $("#cfgHold").addEventListener("input",e=>{ $("#cfgHoldOut").textContent=(e.target.value/1000).toFixed(1)+" วิ"; });
 $("#muteBtn").addEventListener("click",()=>{
