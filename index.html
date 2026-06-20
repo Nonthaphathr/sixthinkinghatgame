@@ -193,6 +193,7 @@
     font-size:15px;line-height:1.6;text-align:left;border-left:4px solid var(--brass);
   }
   .feedcard .explain .lead{font-weight:600;color:var(--ink);}
+  .feedcard .feedhint{margin-top:14px;font-size:13px;color:var(--ink-soft);opacity:.85;}
 
   .btn{
     margin-top:18px;background:var(--ink);color:var(--paper);
@@ -321,6 +322,29 @@
   .status.warn{background:rgba(200,150,46,.16);color:#8a6a1c;}
   .status.err{background:rgba(192,57,43,.14);color:var(--bad);}
   .panel-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;position:sticky;bottom:0;background:var(--paper);padding-top:8px;}
+
+  /* ===== Modal จบเกม + คอนเฟตตี้ ===== */
+  #endModal .panel.endpanel{
+    text-align:center;max-width:460px;
+    background:linear-gradient(180deg,var(--paper),#fffaf0);
+  }
+  #confettiCanvas{
+    position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;
+  }
+  .trophy{
+    font-size:64px;line-height:1;margin-bottom:6px;
+    animation:trophyPop .6s cubic-bezier(.2,.9,.3,1.4);
+  }
+  @keyframes trophyPop{
+    0%{transform:scale(0) rotate(-15deg);opacity:0;}
+    60%{transform:scale(1.2) rotate(8deg);opacity:1;}
+    100%{transform:scale(1) rotate(0);}
+  }
+  .endtitle{
+    font-family:"Noto Serif Thai",serif;font-weight:700;font-size:30px;
+    color:var(--brass);margin-bottom:4px;
+  }
+  .endsub{font-size:14px;color:var(--ink-soft);margin-bottom:6px;}
   .smallbtn{border:none;border-radius:999px;padding:10px 20px;font-family:inherit;font-weight:600;font-size:15px;cursor:pointer;}
   .smallbtn.primary{background:var(--ink);color:var(--paper);}
   .smallbtn.tertiary{background:rgba(27,42,74,.1);color:var(--ink);}
@@ -343,6 +367,8 @@
   <video id="cam" autoplay playsinline muted></video>
   <canvas id="overlay"></canvas>
   <audio id="bgm" loop></audio>
+  <audio id="sfxCorrect" src="https://nonthaphathr.github.io/uploadimg/chawloei.mp3" preload="auto"></audio>
+  <audio id="sfxWrong" src="https://nonthaphathr.github.io/uploadimg/artchayang.mp3" preload="auto"></audio>
 
   <!-- แถบบน -->
   <div class="topbar">
@@ -388,6 +414,7 @@
       <div class="verdict" id="verdict">—</div>
       <div class="answerline" id="answerline">—</div>
       <div class="explain"><span class="lead">เพราะอะไร?</span><br><span id="explainText">—</span></div>
+      <div class="feedhint">↔ สะบัดหน้าซ้ายหรือขวาเร็ว ๆ เพื่อไปข้อต่อไป</div>
       <button class="btn" id="nextBtn">ข้อต่อไป →</button>
     </div>
   </div>
@@ -432,13 +459,20 @@
     <div class="loadnote" id="loadnote">กำลังโหลดโมเดล AI</div>
   </div>
 
-  <!-- หน้าจบ -->
-  <div class="screen hidden" id="endScreen">
-    <h1 style="font-size:34px;">เล่นจบแล้ว!</h1>
-    <div class="scorebig"><span id="finalScore">0</span>/<span id="finalTotal">8</span></div>
-    <div class="scoremsg" id="finalMsg">—</div>
-    <div class="saved-note" id="savedNote"></div>
-    <button class="bigbtn" id="restartBtn">เล่นอีกครั้ง</button>
+  <!-- หน้าจบ: modal แสดงความยินดี -->
+  <div class="modal" id="endModal">
+    <canvas id="confettiCanvas"></canvas>
+    <div class="panel endpanel">
+      <div class="trophy">🏆</div>
+      <h2 class="endtitle">ยินดีด้วย!</h2>
+      <div class="endsub">เล่นจบครบทุกสถานการณ์แล้ว</div>
+      <div class="scorebig"><span id="finalScore">0</span>/<span id="finalTotal">8</span></div>
+      <div class="scoremsg" id="finalMsg">—</div>
+      <div class="saved-note" id="savedNote"></div>
+      <div class="panel-actions" style="justify-content:center;">
+        <button class="bigbtn" id="restartBtn">เล่นอีกครั้ง</button>
+      </div>
+    </div>
   </div>
 
   <!-- เมนูตั้งค่า -->
@@ -763,9 +797,19 @@ function confirmAnswer(){
     : `คุณเลือก <b>${chosen.name}</b> · คำตอบที่เหมาะคือ <b>${ans.name}</b>`;
   $("#explainText").textContent=sc.explain;
   $("#feedback").classList.add("show");
+  playSfx(correct);
+  feedbackYawArmed=true; // เตรียมจับการสะบัดหน้าในหน้าคำอธิบาย
+}
+function playSfx(correct){
+  try{
+    const el=correct?$("#sfxCorrect"):$("#sfxWrong");
+    el.currentTime=0; el.volume=Math.max(0,Math.min(1,settings.musicVol/100));
+    el.play().catch(()=>{});
+  }catch(e){}
 }
 function nextQuestion(){
   $("#feedback").classList.remove("show"); qi++;
+  swipeHistory=[]; feedbackYawArmed=true;
   if(qi>=SCENARIOS.length){ endGame(); return; }
   loadQuestion();
 }
@@ -780,12 +824,43 @@ async function endGame(){
     pct>=0.7?"เก่งมาก! เข้าใจการคิดแต่ละแบบได้ดี":
     pct>=0.4?"ทำได้ดี ลองทบทวนหมวกที่ยังสับสนอีกครั้ง":
              "ไม่เป็นไร ลองเล่นอีกครั้งเพื่อทำความรู้จักหมวกแต่ละใบ";
-  $("#endScreen").classList.remove("hidden");
+  $("#endModal").classList.add("show");
+  launchConfetti();
+  playSfx(pct>=0.5);
   // บันทึกผล
   const name=($("#playerName").value||"").trim()||"ผู้เล่น";
   const note=$("#savedNote"); note.textContent="กำลังบันทึกผล…";
   const where=await saveRecord({name,score,total:SCENARIOS.length,ts:Date.now()});
   note.textContent = where==="cloud" ? "✓ บันทึกคะแนนขึ้น Firestore แล้ว" : "✓ บันทึกคะแนนในเครื่องนี้ (localStorage) แล้ว";
+}
+
+/* ===== คอนเฟตตี้ฉลองตอนจบเกม ===== */
+function launchConfetti(){
+  const canvas=$("#confettiCanvas");
+  canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight;
+  const cctx=canvas.getContext("2d");
+  const colors=["#D64550","#F2C230","#3CA55C","#2E6FC7","#E3B753","#F2F2F2"];
+  const pieces=Array.from({length:90},()=>({
+    x:Math.random()*canvas.width, y:-20-Math.random()*canvas.height*0.3,
+    r:4+Math.random()*5, c:colors[Math.floor(Math.random()*colors.length)],
+    vy:2+Math.random()*3, vx:(Math.random()-0.5)*2.4, rot:Math.random()*Math.PI, vr:(Math.random()-0.5)*0.2
+  }));
+  let frames=0;
+  function tick(){
+    if(!$("#endModal").classList.contains("show")) return;
+    frames++;
+    cctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr;
+      if(p.y>canvas.height+20){ p.y=-20; p.x=Math.random()*canvas.width; }
+      cctx.save(); cctx.translate(p.x,p.y); cctx.rotate(p.rot);
+      cctx.fillStyle=p.c; cctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*1.6);
+      cctx.restore();
+    });
+    if(frames<260) requestAnimationFrame(tick);
+    else cctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  tick();
 }
 function setRing(p){ $("#confirmRing").style.setProperty("--p",p); }
 
@@ -801,6 +876,7 @@ function loop(){
     if(face&&face.faceLandmarks.length){
       drawHat(face.faceLandmarks[0]);
       if(phase==="question") handleYaw(face.faceLandmarks[0]);
+      else if(phase==="feedback") handleFeedbackSwipe(face.faceLandmarks[0]);
     }
     handleHand(hand);
   }
@@ -833,6 +909,29 @@ function handleYaw(lm){
   if(ratio<lowThr && yawArmed){ selectDelta(1*dir); yawArmed=false; }
   else if(ratio>highThr && yawArmed){ selectDelta(-1*dir); yawArmed=false; }
   else if(ratio>0.45 && ratio<0.55){ yawArmed=true; }
+}
+
+/* ===== สะบัดหน้าซ้าย/ขวา เพื่อไปข้อต่อไปตอนอยู่หน้าคำอธิบาย ===== */
+let feedbackYawArmed=true;
+let swipeHistory=[];          // เก็บ ratio + เวลา ไม่กี่เฟรมล่าสุด เพื่อหาความเร็วการสะบัด
+const SWIPE_WINDOW_MS=420;    // ต้องสะบัดจบภายในช่วงเวลานี้
+const SWIPE_DELTA=0.22;       // ระยะ ratio ที่ต้องเปลี่ยนแปลงถึงจะนับว่าเป็นการสะบัด (ไวกว่าการหันเลือกหมวกปกติ)
+function handleFeedbackSwipe(lm){
+  if(!feedbackYawArmed) return;
+  const left=lm[234],right=lm[454],nose=lm[1];
+  const span=right.x-left.x; if(Math.abs(span)<1e-4) return;
+  const ratio=(nose.x-left.x)/span;
+  const t=performance.now();
+  swipeHistory.push({ratio,t});
+  swipeHistory=swipeHistory.filter(p=>t-p.t<=SWIPE_WINDOW_MS);
+  if(swipeHistory.length<2) return;
+  const first=swipeHistory[0];
+  const delta=ratio-first.ratio;
+  if(Math.abs(delta)>=SWIPE_DELTA){
+    feedbackYawArmed=false;     // กันการสะบัดซ้อนจนกว่าจะไปข้อใหม่
+    swipeHistory=[];
+    nextQuestion();
+  }
 }
 
 /* ===== มือยืนยัน ===== */
@@ -919,7 +1018,7 @@ async function onTestCloud(){
 /* ===== ปุ่มควบคุม ===== */
 $("#startBtn").addEventListener("click",init);
 $("#nextBtn").addEventListener("click",nextQuestion);
-$("#restartBtn").addEventListener("click",()=>{ $("#endScreen").classList.add("hidden"); startGame(); });
+$("#restartBtn").addEventListener("click",()=>{ $("#endModal").classList.remove("show"); startGame(); });
 $("#gearBtn").addEventListener("click",openSettings);
 $("#gearBtnTop").addEventListener("click",openSettings);
 $("#closeSettings").addEventListener("click",closeSettings);
