@@ -249,6 +249,37 @@
     color:var(--paper);border-radius:10px;padding:10px 14px;font-family:inherit;font-size:15px;
   }
   .namefield input:focus{outline:2px solid var(--brass-light);}
+  .qcount{display:flex;flex-direction:column;gap:8px;align-items:center;margin-bottom:18px;}
+  .qcount>label{font-size:13px;opacity:.8;}
+  .qcount-opts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+  .qcount-opts button{
+    background:rgba(247,243,233,.1);border:1px solid rgba(247,243,233,.3);
+    color:var(--paper);border-radius:999px;padding:9px 18px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+    transition:background .2s,border-color .2s,transform .12s;
+  }
+  .qcount-opts button:hover{background:rgba(247,243,233,.18);}
+  .qcount-opts button.sel{background:var(--brass);color:#1b1406;border-color:var(--brass-light);}
+  .qcount .desc{font-size:12px;opacity:.65;}
+
+  /* ===== หน้าสไลด์แนะนำหมวก ===== */
+  .intro-progress{display:flex;gap:8px;margin-bottom:24px;}
+  .intro-progress i{width:30px;height:5px;border-radius:999px;background:rgba(247,243,233,.25);transition:background .3s;}
+  .intro-progress i.on{background:var(--brass-light);}
+  .intro-card{
+    display:flex;flex-direction:column;align-items:center;text-align:center;
+    max-width:520px;animation:introIn .4s ease;
+  }
+  @keyframes introIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+  #introHat{width:200px;max-width:60vw;height:auto;filter:drop-shadow(0 12px 28px rgba(0,0,0,.55));margin-bottom:18px;}
+  .intro-card h2{font-family:"Noto Serif Thai",serif;font-weight:700;font-size:34px;margin-bottom:6px;}
+  .intro-role{font-size:18px;color:var(--brass-light);font-weight:600;margin-bottom:16px;}
+  .intro-example{
+    font-size:16px;line-height:1.7;opacity:.92;max-width:460px;
+    background:rgba(247,243,233,.08);border:1px solid rgba(247,243,233,.16);
+    border-radius:14px;padding:14px 20px;
+  }
+  .intro-actions{display:flex;gap:12px;margin-top:28px;}
+
   .start-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center;}
   .bigbtn{
     background:var(--brass);color:#1b1406;border:none;border-radius:999px;
@@ -361,6 +392,16 @@
   }
   .radar-legend span{display:inline-flex;align-items:center;gap:5px;}
   .radar-legend i{width:11px;height:11px;border-radius:3px;display:inline-block;border:1px solid rgba(0,0,0,.15);}
+  .radar-advice{
+    text-align:left;margin-top:14px;font-size:13.5px;line-height:1.6;
+    background:rgba(27,42,74,.05);border:1px solid rgba(27,42,74,.12);
+    border-radius:12px;padding:14px 16px;
+  }
+  .radar-advice .ah{font-weight:700;color:var(--ink);margin-bottom:4px;display:block;}
+  .radar-advice .ag{color:var(--good);}
+  .radar-advice .ai{color:#b8851f;}
+  .radar-advice ul{margin:4px 0 0;padding-left:18px;}
+  .radar-advice li{margin-bottom:3px;}
   .ghostbtn.dark{
     background:transparent;color:var(--ink);border:1px solid rgba(27,42,74,.4);
     border-radius:999px;padding:15px 26px;font-family:inherit;font-weight:600;font-size:16px;cursor:pointer;
@@ -467,6 +508,16 @@
       <label for="playerName">ชื่อผู้เล่น (ไม่บังคับ)</label>
       <input type="text" id="playerName" maxlength="40" placeholder="พิมพ์ชื่อของคุณ" />
     </div>
+    <div class="qcount">
+      <label>จำนวนข้อที่จะเล่น</label>
+      <div class="qcount-opts" id="qcountOpts">
+        <button type="button" data-n="5">5 ข้อ</button>
+        <button type="button" data-n="10" class="sel">10 ข้อ</button>
+        <button type="button" data-n="15">15 ข้อ</button>
+        <button type="button" data-n="0">ทั้งหมด</button>
+      </div>
+      <div class="desc" id="qcountNote">ระบบจะสุ่มข้อจากคลังตามจำนวนที่เลือก</div>
+    </div>
     <div class="start-actions">
       <button class="bigbtn" id="startBtn">เปิดกล้องแล้วเริ่มเล่น</button>
       <button class="ghostbtn" id="gearBtn">⚙ ตั้งค่า</button>
@@ -480,6 +531,21 @@
     <div class="spinner"></div>
     <h1 style="font-size:28px;">กำลังเตรียมระบบตรวจจับ…</h1>
     <div class="loadnote" id="loadnote">กำลังโหลดโมเดล AI</div>
+  </div>
+
+  <!-- หน้าสไลด์แนะนำหมวก -->
+  <div class="screen hidden" id="introScreen">
+    <div class="intro-progress" id="introProgress"></div>
+    <div class="intro-card" id="introCard">
+      <img id="introHat" alt="หมวก" />
+      <h2 id="introName">—</h2>
+      <div class="intro-role" id="introRole">—</div>
+      <div class="intro-example" id="introExample">—</div>
+    </div>
+    <div class="intro-actions">
+      <button class="ghostbtn" id="introSkip">ข้าม</button>
+      <button class="bigbtn" id="introNext">ถัดไป →</button>
+    </div>
   </div>
 
   <!-- หน้าจบ: modal แสดงความยินดี -->
@@ -496,6 +562,7 @@
         <div class="radar-title">ผลประเมินทักษะการคิดทั้ง 6 ด้าน</div>
         <canvas id="skillRadar" width="320" height="320"></canvas>
         <div class="radar-legend" id="radarLegend"></div>
+        <div class="radar-advice" id="radarAdvice"></div>
       </div>
 
       <div class="saved-note" id="savedNote"></div>
@@ -623,17 +690,29 @@
 /* ===== หมวก 6 ใบ ===== */
 const HATS = [
   { key:"white",  name:"หมวกขาว",   role:"ข้อมูล ตัวเลข ข้อเท็จจริงที่เป็นกลาง",   color:"#F2F2F2",
-    img:"https://nonthaphathr.github.io/uploadimg/sixhatwhite.png" },
+    img:"https://nonthaphathr.github.io/uploadimg/sixhatwhite.png",
+    example:"ใช้เมื่อต้องการข้อมูล ข้อเท็จจริง หรือตัวเลข เช่น “เรามีข้อมูลอะไรบ้าง” “ตัวเลขที่แท้จริงคือเท่าไร”",
+    tipGood:"เก่งเรื่องการแยกแยะข้อเท็จจริงออกจากความเห็น", tipImprove:"ฝึกตั้งคำถามหาข้อมูลที่ยังขาดก่อนตัดสินใจ" },
   { key:"red",    name:"หมวกแดง",   role:"อารมณ์ ความรู้สึก สัญชาตญาณ",          color:"#D64550",
-    img:"https://nonthaphathr.github.io/uploadimg/sixhatred.png" },
+    img:"https://nonthaphathr.github.io/uploadimg/sixhatred.png",
+    example:"ใช้เมื่อต้องการบอกความรู้สึกหรือสัญชาตญาณ เช่น “ฉันรู้สึกอย่างไรกับเรื่องนี้” โดยไม่ต้องอธิบายเหตุผล",
+    tipGood:"รับรู้และสื่อสารอารมณ์ได้ดี", tipImprove:"ฝึกแยกว่าเมื่อใดควรใช้ความรู้สึก เมื่อใดควรใช้ข้อมูล" },
   { key:"black",  name:"หมวกดำ",    role:"ข้อควรระวัง จุดอ่อน ความเสี่ยง",        color:"#2B2B2B",
-    img:"https://nonthaphathr.github.io/uploadimg/sixhatblack.png" },
+    img:"https://nonthaphathr.github.io/uploadimg/sixhatblack.png",
+    example:"ใช้เมื่อต้องประเมินความเสี่ยงหรือจุดอ่อน เช่น “อะไรที่อาจผิดพลาด” “มีข้อควรระวังอะไรบ้าง”",
+    tipGood:"มองเห็นความเสี่ยงและป้องกันปัญหาได้ดี", tipImprove:"ระวังอย่ามองแง่ลบจนมองข้ามโอกาสดี ๆ" },
   { key:"yellow", name:"หมวกเหลือง", role:"ข้อดี ประโยชน์ การมองแง่บวก",          color:"#F2C230",
-    img:"https://nonthaphathr.github.io/uploadimg/sixhatyellow.png" },
+    img:"https://nonthaphathr.github.io/uploadimg/sixhatyellow.png",
+    example:"ใช้เมื่อต้องการมองหาข้อดีหรือประโยชน์ เช่น “เรื่องนี้ดีอย่างไร” “จะได้ประโยชน์อะไรบ้าง”",
+    tipGood:"มองเห็นคุณค่าและโอกาสในเชิงบวกได้ดี", tipImprove:"ฝึกหาเหตุผลสนับสนุนข้อดีที่มองเห็น" },
   { key:"green",  name:"หมวกเขียว",  role:"ความคิดสร้างสรรค์ ไอเดียใหม่ ทางเลือก",  color:"#3CA55C",
-    img:"https://nonthaphathr.github.io/uploadimg/sixhatgreen.png" },
+    img:"https://nonthaphathr.github.io/uploadimg/sixhatgreen.png",
+    example:"ใช้เมื่อต้องการไอเดียใหม่หรือทางเลือก เช่น “มีวิธีอื่นอีกไหม” “ลองคิดนอกกรอบดู”",
+    tipGood:"คิดสร้างสรรค์และเสนอทางเลือกใหม่ได้ดี", tipImprove:"ฝึกต่อยอดไอเดียให้นำไปใช้ได้จริง" },
   { key:"blue",   name:"หมวกฟ้า",    role:"ควบคุม จัดระบบ ภาพรวม กระบวนการคิด",    color:"#2E6FC7",
-    img:"https://nonthaphathr.github.io/uploadimg/sixhatblue.png" },
+    img:"https://nonthaphathr.github.io/uploadimg/sixhatblue.png",
+    example:"ใช้เมื่อต้องวางแผนหรือสรุปภาพรวม เช่น “เราจะคิดเรื่องนี้ตามลำดับใด” “สรุปได้ว่าอย่างไร”",
+    tipGood:"จัดระบบความคิดและคุมกระบวนการได้ดี", tipImprove:"ฝึกสรุปประเด็นให้กระชับและชัดเจน" },
 ];
 const HAT_INDEX = Object.fromEntries(HATS.map((h,i)=>[h.key,i]));
 
@@ -878,7 +957,6 @@ function preloadHats(){
 async function init(){
   $("#startScreen").classList.add("hidden");
   $("#loadScreen").classList.remove("hidden");
-  tryPlayMusic();
   try{
     $("#loadnote").textContent="กำลังขอสิทธิ์ใช้กล้อง…";
     const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:1280,height:720},audio:false});
@@ -897,7 +975,9 @@ async function init(){
 
     resizeCanvas();
     $("#loadScreen").classList.add("hidden");
-    startGame(); running=true; requestAnimationFrame(loop);
+    tryPlayMusic();           // เริ่มเพลงหลังกล้อง+โมเดลพร้อมแล้ว
+    running=true; requestAnimationFrame(loop);
+    showIntro();              // แสดงสไลด์แนะนำหมวกก่อนเริ่มเล่น
   }catch(err){
     $("#loadScreen").classList.add("hidden");
     $("#startScreen").classList.remove("hidden");
@@ -909,6 +989,36 @@ async function init(){
 function resizeCanvas(){ overlay.width=stage.clientWidth; overlay.height=stage.clientHeight; }
 window.addEventListener("resize",resizeCanvas);
 
+/* ===== สไลด์แนะนำหมวก ===== */
+let introIdx=0;
+function showIntro(){
+  introIdx=0;
+  // สร้างจุดบอกความคืบหน้า
+  $("#introProgress").innerHTML=HATS.map(()=>`<i></i>`).join("");
+  $("#introScreen").classList.remove("hidden");
+  renderIntro();
+}
+function renderIntro(){
+  const h=HATS[introIdx];
+  $("#introHat").src=h.img;
+  $("#introName").textContent=h.name;
+  $("#introName").style.color=h.key==="white"?"#F7F3E9":h.color;
+  $("#introRole").textContent=h.role;
+  $("#introExample").textContent=h.example;
+  document.querySelectorAll("#introProgress i").forEach((d,i)=>d.classList.toggle("on",i<=introIdx));
+  $("#introNext").textContent = introIdx>=HATS.length-1 ? "เริ่มเล่น ✓" : "ถัดไป →";
+  // เล่นแอนิเมชันเข้าใหม่ทุกสไลด์
+  const card=$("#introCard"); card.style.animation="none"; void card.offsetWidth; card.style.animation="";
+}
+function introNext(){
+  if(introIdx>=HATS.length-1){ endIntro(); return; }
+  introIdx++; renderIntro();
+}
+function endIntro(){
+  $("#introScreen").classList.add("hidden");
+  startGame();
+}
+
 /* ===== เกม ===== */
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 let skillStats={};   // เก็บสถิติแยกตามสีหมวก {key:{correct,total}}
@@ -916,11 +1026,16 @@ function resetSkillStats(){
   skillStats={};
   HATS.forEach(h=>skillStats[h.key]={correct:0,total:0});
 }
+let selectedCount=10;   // จำนวนข้อที่เลือก (0 = ทั้งหมด)
 function startGame(){
   applyCustomQuestions();
-  order=shuffle([...Array(DECK.length).keys()]); qi=0; score=0;
+  // สุ่มลำดับข้อทั้งคลัง แล้วตัดตามจำนวนที่เลือก
+  let pool=shuffle([...Array(DECK.length).keys()]);
+  const n = (selectedCount>0) ? Math.min(selectedCount,DECK.length) : DECK.length;
+  order=pool.slice(0,n);
+  qi=0; score=0;
   resetSkillStats();
-  $("#qtotal").textContent=DECK.length;
+  $("#qtotal").textContent=order.length;
   $("#scenarioCard").style.display=""; $("#hatLabel").style.display="";
   $("#carousel").style.display=""; $("#confirmBtn").style.display="";
   loadQuestion();
@@ -969,15 +1084,15 @@ function playSfx(correct){
 function nextQuestion(){
   $("#feedback").classList.remove("show"); qi++;
   feedbackArmGesture=true; armHistory=[];
-  if(qi>=DECK.length){ endGame(); return; }
+  if(qi>=order.length){ endGame(); return; }
   loadQuestion();
 }
 async function endGame(){
   phase="end";
   $("#scenarioCard").style.display="none"; $("#hatLabel").style.display="none";
   $("#carousel").style.display="none"; $("#confirmBtn").style.display="none";
-  $("#finalScore").textContent=score; $("#finalTotal").textContent=DECK.length;
-  const pct=score/DECK.length;
+  $("#finalScore").textContent=score; $("#finalTotal").textContent=order.length;
+  const pct=score/order.length;
   $("#finalMsg").textContent=
     pct===1?"ยอดเยี่ยม! เข้าใจหมวกคิดทุกใบเลย":
     pct>=0.7?"เก่งมาก! เข้าใจการคิดแต่ละแบบได้ดี":
@@ -990,7 +1105,7 @@ async function endGame(){
   // บันทึกผล
   const name=($("#playerName").value||"").trim()||"ผู้เล่น";
   const note=$("#savedNote"); note.textContent="กำลังบันทึกผล…";
-  const where=await saveRecord({name,score,total:DECK.length,skills:skillStats,ts:Date.now()});
+  const where=await saveRecord({name,score,total:order.length,skills:skillStats,ts:Date.now()});
   note.textContent = where==="cloud" ? "✓ บันทึกคะแนนขึ้น Firestore แล้ว" : "✓ บันทึกคะแนนในเครื่องนี้ (localStorage) แล้ว";
 }
 
@@ -1089,6 +1204,39 @@ function drawSkillRadar(){
     const pct = (s&&s.total)? Math.round(vals[i]*100)+"%" : "—";
     return `<span><i style="background:${h.color}"></i>${h.name} ${pct}</span>`;
   }).join("");
+
+  buildAdvice(vals);
+}
+
+/* ===== สร้างคำอธิบาย/ข้อแนะนำตามผลแต่ละหมวก ===== */
+function buildAdvice(vals){
+  const box=$("#radarAdvice"); if(!box) return;
+  // พิจารณาเฉพาะหมวกที่มีข้อในเกมรอบนี้
+  const tested=HATS.map((h,i)=>({h,v:vals[i],has:skillStats[h.key]&&skillStats[h.key].total>0})).filter(x=>x.has);
+  if(!tested.length){ box.innerHTML="<span class='ah'>ข้อแนะนำ</span>รอบนี้ยังไม่มีข้อมูลพอจะประเมินทักษะ ลองเล่นเพิ่มอีกสักรอบนะ"; return; }
+  const overall = tested.reduce((a,b)=>a+b.v,0)/tested.length;
+  const strong = tested.filter(x=>x.v>=0.75).map(x=>x.h);
+  const weak   = tested.filter(x=>x.v<0.5).map(x=>x.h);
+
+  let head;
+  if(overall>=0.85) head="ภาพรวมยอดเยี่ยม ใช้หมวกคิดได้คล่องแคล่วเกือบทุกด้าน";
+  else if(overall>=0.6) head="ภาพรวมอยู่ในเกณฑ์ดี เข้าใจบทบาทของหมวกคิดเป็นอย่างดี";
+  else if(overall>=0.4) head="ภาพรวมพอใช้ ยังมีหมวกบางใบที่ควรฝึกเพิ่ม";
+  else head="ยังต้องฝึกอีกหน่อย ลองทบทวนบทบาทของหมวกแต่ละใบ";
+
+  let html=`<span class="ah">ข้อแนะนำเฉพาะบุคคล</span>${head}`;
+  if(strong.length){
+    html+=`<div class="ag" style="margin-top:8px;"><b>จุดเด่น:</b><ul>`+
+      strong.map(h=>`<li>${h.name} — ${h.tipGood}</li>`).join("")+`</ul></div>`;
+  }
+  if(weak.length){
+    html+=`<div class="ai" style="margin-top:8px;"><b>ควรพัฒนาเพิ่ม:</b><ul>`+
+      weak.map(h=>`<li>${h.name} — ${h.tipImprove}</li>`).join("")+`</ul></div>`;
+  }
+  if(!strong.length && !weak.length){
+    html+=`<div style="margin-top:8px;">ทำได้สม่ำเสมอในทุกด้าน ลองเพิ่มจำนวนข้อเพื่อท้าทายตัวเองมากขึ้น</div>`;
+  }
+  box.innerHTML=html;
 }
 
 /* ===== ลูปตรวจจับ ===== */
@@ -1280,6 +1428,14 @@ async function onTestCloud(){
 
 /* ===== ปุ่มควบคุม ===== */
 $("#startBtn").addEventListener("click",init);
+$("#introNext").addEventListener("click",introNext);
+$("#introSkip").addEventListener("click",endIntro);
+$("#qcountOpts").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-n]"); if(!b) return;
+  document.querySelectorAll("#qcountOpts button").forEach(x=>x.classList.remove("sel"));
+  b.classList.add("sel");
+  selectedCount=+b.dataset.n;
+});
 $("#nextBtn").addEventListener("click",nextQuestion);
 $("#restartBtn").addEventListener("click",()=>{ $("#endModal").classList.remove("show"); startGame(); });
 $("#homeBtn").addEventListener("click",goHome);
@@ -1308,6 +1464,7 @@ $("#settingsModal").addEventListener("click",e=>{ if(e.target.id==="settingsModa
 function goHome(){
   running=false; phase="idle";
   $("#endModal").classList.remove("show");
+  $("#introScreen").classList.add("hidden");
   try{ const s=video.srcObject; if(s){ s.getTracks().forEach(t=>t.stop()); } video.srcObject=null; }catch(e){}
   ctx.clearRect(0,0,overlay.width,overlay.height);
   $("#scenarioCard").style.display="none"; $("#hatLabel").style.display="none";
