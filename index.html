@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Noto+Serif+Thai:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
     --paper:#F7F3E9;
@@ -349,6 +350,24 @@
     color:var(--brass);margin-bottom:4px;
   }
   .endsub{font-size:14px;color:var(--ink-soft);margin-bottom:6px;}
+
+  /* ===== กราฟเรดาร์ทักษะการคิด ===== */
+  .radar-section{margin:14px 0 4px;}
+  .radar-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:8px;}
+  #skillRadar{max-width:100%;height:auto;display:block;margin:0 auto;}
+  .radar-legend{
+    display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:center;
+    margin-top:10px;font-size:12px;color:var(--ink-soft);
+  }
+  .radar-legend span{display:inline-flex;align-items:center;gap:5px;}
+  .radar-legend i{width:11px;height:11px;border-radius:3px;display:inline-block;border:1px solid rgba(0,0,0,.15);}
+  .ghostbtn.dark{
+    background:transparent;color:var(--ink);border:1px solid rgba(27,42,74,.4);
+    border-radius:999px;padding:15px 26px;font-family:inherit;font-weight:600;font-size:16px;cursor:pointer;
+    transition:background .2s;
+  }
+  .ghostbtn.dark:hover{background:rgba(27,42,74,.08);}
+
   .smallbtn{border:none;border-radius:999px;padding:10px 20px;font-family:inherit;font-weight:600;font-size:15px;cursor:pointer;}
   .smallbtn.primary{background:var(--ink);color:var(--paper);}
   .smallbtn.tertiary{background:rgba(27,42,74,.1);color:var(--ink);}
@@ -472,9 +491,17 @@
       <div class="endsub">เล่นจบครบทุกสถานการณ์แล้ว</div>
       <div class="scorebig"><span id="finalScore">0</span>/<span id="finalTotal">8</span></div>
       <div class="scoremsg" id="finalMsg">—</div>
+
+      <div class="radar-section">
+        <div class="radar-title">ผลประเมินทักษะการคิดทั้ง 6 ด้าน</div>
+        <canvas id="skillRadar" width="320" height="320"></canvas>
+        <div class="radar-legend" id="radarLegend"></div>
+      </div>
+
       <div class="saved-note" id="savedNote"></div>
-      <div class="panel-actions" style="justify-content:center;">
+      <div class="panel-actions" style="justify-content:center;gap:12px;">
         <button class="bigbtn" id="restartBtn">เล่นอีกครั้ง</button>
+        <button class="ghostbtn dark" id="homeBtn">กลับหน้าหลัก</button>
       </div>
     </div>
   </div>
@@ -556,6 +583,18 @@
       </div>
 
       <div class="group">
+        <h3>📄 นำเข้าข้อคำถามจาก Excel</h3>
+        <div class="field">
+          <label>อัปโหลดไฟล์ .xlsx</label>
+          <input type="file" id="cfgXlsx" accept=".xlsx,.xls" />
+          <div class="desc">รูปแบบ 3 คอลัมน์ตามลำดับ: <b>สถานการณ์ | เฉลย | คำอธิบาย</b><br>ช่องเฉลยใส่รหัสสีอังกฤษ: white, red, black, yellow, green, blue (มีหรือไม่มีแถวหัวตารางก็ได้)</div>
+        </div>
+        <div class="status" id="xlsxStatus" style="display:none;"></div>
+        <div id="xlsxCurrent" class="desc" style="margin-top:6px;"></div>
+        <button class="smallbtn tertiary" id="resetQuestionsBtn" style="margin-top:8px;">กลับไปใช้ชุดคำถามเริ่มต้น</button>
+      </div>
+
+      <div class="group">
         <h3>☁️ การบันทึกข้อมูล (Firestore)</h3>
         <div class="field">
           <label for="cfgFb">วาง Firebase config ที่นี่</label>
@@ -618,6 +657,84 @@ const SCENARIOS = [
     explain:"หมวกเหลืองมองหาประโยชน์และข้อดี เช่น ช่วยประหยัดค่าไฟและเป็นมิตรกับสิ่งแวดล้อม" },
 ];
 
+/* ชุดโจทย์ที่ใช้งานจริง — เปลี่ยนได้เมื่อ import จาก xlsx */
+let DECK = SCENARIOS.slice();
+
+/* แมปชื่อสีไทย → รหัสสีอังกฤษ (รองรับเผื่อไฟล์ใช้ชื่อไทย) */
+const COLOR_ALIAS={
+  "white":"white","ขาว":"white","หมวกขาว":"white",
+  "red":"red","แดง":"red","หมวกแดง":"red",
+  "black":"black","ดำ":"black","หมวกดำ":"black",
+  "yellow":"yellow","เหลือง":"yellow","หมวกเหลือง":"yellow",
+  "green":"green","เขียว":"green","หมวกเขียว":"green",
+  "blue":"blue","ฟ้า":"blue","น้ำเงิน":"blue","หมวกฟ้า":"blue"
+};
+const VALID_KEYS=new Set(HATS.map(h=>h.key));
+
+function applyCustomQuestions(){
+  if(settings.customQuestions && Array.isArray(settings.customQuestions) && settings.customQuestions.length){
+    DECK = settings.customQuestions.slice();
+  }else{
+    DECK = SCENARIOS.slice();
+  }
+}
+
+/* แปลงข้อมูลจากแถวตาราง → โจทย์ */
+function rowsToScenarios(rows){
+  const out=[];
+  rows.forEach((r,i)=>{
+    if(!r || r.length<3) return;
+    let text=(r[0]??"").toString().trim();
+    let ansRaw=(r[1]??"").toString().trim().toLowerCase();
+    let explain=(r[2]??"").toString().trim();
+    // ข้ามแถวหัวตาราง
+    if(i===0 && (ansRaw==="เฉลย" || ansRaw==="answer" || text==="สถานการณ์")) return;
+    const ans=COLOR_ALIAS[ansRaw] || (VALID_KEYS.has(ansRaw)?ansRaw:null);
+    if(!text || !ans) return;
+    out.push({answer:ans, text, explain: explain||"(ไม่มีคำอธิบาย)"});
+  });
+  return out;
+}
+
+/* อ่านไฟล์ xlsx */
+function handleXlsxFile(file){
+  const status=$("#xlsxStatus"); status.style.display="block";
+  if(typeof XLSX==="undefined"){
+    status.className="status err"; status.textContent="ยังโหลดตัวอ่านไฟล์ Excel ไม่สำเร็จ ลองรีเฟรชหน้าอีกครั้ง"; return;
+  }
+  status.className="status warn"; status.textContent="กำลังอ่านไฟล์…";
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=new Uint8Array(e.target.result);
+      const wb=XLSX.read(data,{type:"array"});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
+      const scn=rowsToScenarios(rows);
+      if(!scn.length){
+        status.className="status err";
+        status.textContent="ไม่พบโจทย์ที่ถูกต้อง ตรวจรูปแบบคอลัมน์: สถานการณ์ | เฉลย(รหัสสี) | คำอธิบาย";
+        return;
+      }
+      settings.customQuestions=scn; saveSettingsStore(); applyCustomQuestions();
+      status.className="status ok"; status.textContent=`✓ นำเข้าสำเร็จ ${scn.length} ข้อ — จะใช้ชุดนี้ในการเล่นครั้งต่อไป`;
+      updateXlsxCurrent();
+    }catch(err){
+      status.className="status err"; status.textContent="อ่านไฟล์ไม่สำเร็จ: "+((err&&err.message)||err);
+    }
+  };
+  reader.onerror=()=>{ status.className="status err"; status.textContent="เปิดไฟล์ไม่สำเร็จ"; };
+  reader.readAsArrayBuffer(file);
+}
+function updateXlsxCurrent(){
+  const el=$("#xlsxCurrent"); if(!el) return;
+  if(settings.customQuestions && settings.customQuestions.length){
+    el.innerHTML=`กำลังใช้ชุดที่นำเข้า: <b>${settings.customQuestions.length} ข้อ</b>`;
+  }else{
+    el.innerHTML=`กำลังใช้ชุดคำถามเริ่มต้น: <b>${SCENARIOS.length} ข้อ</b>`;
+  }
+}
+
 /* ===== ตัวช่วย ===== */
 const $ = s => document.querySelector(s);
 const stage=$("#stage"), video=$("#cam"), overlay=$("#overlay"), ctx=overlay.getContext("2d");
@@ -629,11 +746,22 @@ function lsGet(k){ try{return localStorage.getItem(k);}catch(e){return (k in mem
 function lsSet(k,v){ try{localStorage.setItem(k,v);}catch(e){memStore[k]=v;} }
 
 /* ===== ค่าตั้งค่า ===== */
+/* ===== Firebase config ที่ฝังไว้ (ใช้เป็นค่าเริ่มต้นถ้าไม่กรอกในตั้งค่า) ===== */
+const HARDCODED_FIREBASE_CONFIG={
+  apiKey: "AIzaSyBzz7yONggEnrv0RM3dqxduFqmGV710zgU",
+  authDomain: "sixhat-774d8.firebaseapp.com",
+  projectId: "sixhat-774d8",
+  storageBucket: "sixhat-774d8.firebasestorage.app",
+  messagingSenderId: "194505931651",
+  appId: "1:194505931651:web:e5fb69bb4a608aa42054b6"
+};
+
 const DEFAULTS={
   bgImage:"", logo:"", favicon:"",
   musicUrl:"", musicVol:50, musicOn:true, sfxVol:90,
   invertTurn:false, turnThr:62, holdMs:1200,
-  firebaseConfig:"", collection:"sixhats_scores"
+  firebaseConfig:"", collection:"sixhats_scores",
+  customQuestions:null   // โจทย์ที่นำเข้าจาก .xlsx (ถ้ามี)
 };
 let settings={...DEFAULTS};
 function loadSettings(){
@@ -661,7 +789,8 @@ function parseConfig(raw){
 }
 async function initCloud(){
   cloudReady=false; db=null;
-  const cfg=parseConfig(settings.firebaseConfig);
+  // ถ้าไม่กรอก config ในตั้งค่า ให้ใช้ค่าที่ฝังไว้
+  const cfg=parseConfig(settings.firebaseConfig) || HARDCODED_FIREBASE_CONFIG;
   if(!cfg) return {ok:false,reason:"no-config"};
   try{
     const appMod=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
@@ -764,7 +893,7 @@ async function init(){
       runningMode:"VIDEO",numFaces:1});
     handLandmarker=await HandLandmarker.createFromOptions(vision,{
       baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",delegate:"GPU"},
-      runningMode:"VIDEO",numHands:1});
+      runningMode:"VIDEO",numHands:2});
 
     resizeCanvas();
     $("#loadScreen").classList.add("hidden");
@@ -782,23 +911,32 @@ window.addEventListener("resize",resizeCanvas);
 
 /* ===== เกม ===== */
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+let skillStats={};   // เก็บสถิติแยกตามสีหมวก {key:{correct,total}}
+function resetSkillStats(){
+  skillStats={};
+  HATS.forEach(h=>skillStats[h.key]={correct:0,total:0});
+}
 function startGame(){
-  order=shuffle([...Array(SCENARIOS.length).keys()]); qi=0; score=0;
-  $("#qtotal").textContent=SCENARIOS.length;
+  applyCustomQuestions();
+  order=shuffle([...Array(DECK.length).keys()]); qi=0; score=0;
+  resetSkillStats();
+  $("#qtotal").textContent=DECK.length;
   $("#scenarioCard").style.display=""; $("#hatLabel").style.display="";
   $("#carousel").style.display=""; $("#confirmBtn").style.display="";
   loadQuestion();
 }
 function loadQuestion(){
-  const sc=SCENARIOS[order[qi]];
+  const sc=DECK[order[qi]];
   $("#qtext").textContent=sc.text; $("#qnum").textContent=qi+1; $("#score").textContent=score;
   selected=0; refreshHatUI(); holdStart=0; setRing(0); phase="question";
 }
 function confirmAnswer(){
   if(phase!=="question") return;
   phase="feedback"; setRing(0); holdStart=0;
-  const sc=SCENARIOS[order[qi]], chosen=HATS[selected];
+  const sc=DECK[order[qi]], chosen=HATS[selected];
   const correct=chosen.key===sc.answer; if(correct) score++;
+  // สะสมสถิติทักษะตามสีหมวกที่เป็นคำตอบที่ถูกต้องของข้อนั้น
+  if(skillStats[sc.answer]){ skillStats[sc.answer].total++; if(correct) skillStats[sc.answer].correct++; }
   $("#score").textContent=score;
   const card=$("#feedcard"); card.classList.remove("correct","wrong");
   card.classList.add(correct?"correct":"wrong");
@@ -831,27 +969,28 @@ function playSfx(correct){
 function nextQuestion(){
   $("#feedback").classList.remove("show"); qi++;
   feedbackArmGesture=true; armHistory=[];
-  if(qi>=SCENARIOS.length){ endGame(); return; }
+  if(qi>=DECK.length){ endGame(); return; }
   loadQuestion();
 }
 async function endGame(){
   phase="end";
   $("#scenarioCard").style.display="none"; $("#hatLabel").style.display="none";
   $("#carousel").style.display="none"; $("#confirmBtn").style.display="none";
-  $("#finalScore").textContent=score; $("#finalTotal").textContent=SCENARIOS.length;
-  const pct=score/SCENARIOS.length;
+  $("#finalScore").textContent=score; $("#finalTotal").textContent=DECK.length;
+  const pct=score/DECK.length;
   $("#finalMsg").textContent=
     pct===1?"ยอดเยี่ยม! เข้าใจหมวกคิดทุกใบเลย":
     pct>=0.7?"เก่งมาก! เข้าใจการคิดแต่ละแบบได้ดี":
     pct>=0.4?"ทำได้ดี ลองทบทวนหมวกที่ยังสับสนอีกครั้ง":
              "ไม่เป็นไร ลองเล่นอีกครั้งเพื่อทำความรู้จักหมวกแต่ละใบ";
+  drawSkillRadar();
   $("#endModal").classList.add("show");
   launchConfetti();
   playSfx(pct>=0.5);
   // บันทึกผล
   const name=($("#playerName").value||"").trim()||"ผู้เล่น";
   const note=$("#savedNote"); note.textContent="กำลังบันทึกผล…";
-  const where=await saveRecord({name,score,total:SCENARIOS.length,ts:Date.now()});
+  const where=await saveRecord({name,score,total:DECK.length,skills:skillStats,ts:Date.now()});
   note.textContent = where==="cloud" ? "✓ บันทึกคะแนนขึ้น Firestore แล้ว" : "✓ บันทึกคะแนนในเครื่องนี้ (localStorage) แล้ว";
 }
 
@@ -884,6 +1023,73 @@ function launchConfetti(){
   tick();
 }
 function setRing(p){ $("#confirmRing").style.setProperty("--p",p); }
+
+/* ===== กราฟเรดาร์ทักษะการคิด 6 ด้าน ===== */
+function drawSkillRadar(){
+  const canvas=$("#skillRadar"); if(!canvas) return;
+  const dpr=window.devicePixelRatio||1;
+  const size=300;
+  canvas.width=size*dpr; canvas.height=size*dpr;
+  canvas.style.width=size+"px"; canvas.style.height=size+"px";
+  const g=canvas.getContext("2d"); g.scale(dpr,dpr);
+  const cx=size/2, cy=size/2+6, R=size*0.34;
+  const n=HATS.length;
+  // ค่าทักษะ 0..1 ของแต่ละหมวก (ถ้าหมวกไหนไม่มีข้อในเด็คชุดนี้ ให้เป็น 0)
+  const vals=HATS.map(h=>{ const s=skillStats[h.key]; return (s&&s.total)? s.correct/s.total : 0; });
+
+  g.clearRect(0,0,size,size);
+  // วงใยแมงมุม
+  const rings=4;
+  g.strokeStyle="rgba(27,42,74,.18)"; g.fillStyle="rgba(27,42,74,.04)"; g.lineWidth=1;
+  for(let r=1;r<=rings;r++){
+    const rr=R*r/rings;
+    g.beginPath();
+    for(let i=0;i<n;i++){
+      const a=-Math.PI/2 + i*2*Math.PI/n;
+      const x=cx+rr*Math.cos(a), y=cy+rr*Math.sin(a);
+      i===0?g.moveTo(x,y):g.lineTo(x,y);
+    }
+    g.closePath(); g.stroke(); if(r===rings) g.fill();
+  }
+  // แกน + ป้ายชื่อหมวก
+  g.font="12px 'IBM Plex Sans Thai', sans-serif"; g.textAlign="center"; g.textBaseline="middle";
+  for(let i=0;i<n;i++){
+    const a=-Math.PI/2 + i*2*Math.PI/n;
+    const x=cx+R*Math.cos(a), y=cy+R*Math.sin(a);
+    g.strokeStyle="rgba(27,42,74,.15)"; g.beginPath(); g.moveTo(cx,cy); g.lineTo(x,y); g.stroke();
+    // จุดสีหมวกที่ปลายแกน
+    const lx=cx+(R+16)*Math.cos(a), ly=cy+(R+16)*Math.sin(a);
+    g.fillStyle=HATS[i].color; g.strokeStyle="rgba(0,0,0,.2)";
+    g.beginPath(); g.arc(lx,ly,6,0,Math.PI*2); g.fill(); g.stroke();
+  }
+  // รูปหลายเหลี่ยมของคะแนน
+  g.beginPath();
+  for(let i=0;i<n;i++){
+    const a=-Math.PI/2 + i*2*Math.PI/n;
+    const rr=R*Math.max(0.04,vals[i]);
+    const x=cx+rr*Math.cos(a), y=cy+rr*Math.sin(a);
+    i===0?g.moveTo(x,y):g.lineTo(x,y);
+  }
+  g.closePath();
+  g.fillStyle="rgba(200,150,46,.30)"; g.fill();
+  g.strokeStyle="#C8962E"; g.lineWidth=2.5; g.stroke();
+  // จุดยอดแต่ละมุม
+  for(let i=0;i<n;i++){
+    const a=-Math.PI/2 + i*2*Math.PI/n;
+    const rr=R*Math.max(0.04,vals[i]);
+    const x=cx+rr*Math.cos(a), y=cy+rr*Math.sin(a);
+    g.fillStyle=HATS[i].color; g.strokeStyle="#1B2A4A"; g.lineWidth=1.5;
+    g.beginPath(); g.arc(x,y,4,0,Math.PI*2); g.fill(); g.stroke();
+  }
+
+  // คำอธิบายสี + เปอร์เซ็นต์
+  const legend=$("#radarLegend");
+  legend.innerHTML=HATS.map((h,i)=>{
+    const s=skillStats[h.key];
+    const pct = (s&&s.total)? Math.round(vals[i]*100)+"%" : "—";
+    return `<span><i style="background:${h.color}"></i>${h.name} ${pct}</span>`;
+  }).join("");
+}
 
 /* ===== ลูปตรวจจับ ===== */
 function loop(){
@@ -934,26 +1140,34 @@ function handleYaw(lm){
 /* ===== ยกแขนแล้วปัดออกข้าง เพื่อไปข้อต่อไปตอนอยู่หน้าคำอธิบาย ===== */
 let feedbackArmGesture=true;
 let armHistory=[];            // เก็บตำแหน่งข้อมือ + เวลา เพื่อหาความเร็วการปัด
-const ARM_WINDOW_MS=500;      // ต้องปัดจบภายในช่วงเวลานี้
-const ARM_DELTA=0.16;         // ระยะ (เทียบสัดส่วนความกว้างจอ) ที่ข้อมือต้องเคลื่อนถึงจะนับว่าเป็นการปัด
-function handleArmSwipe(hand){
-  if(!feedbackArmGesture || !hand || !hand.landmarks.length){ return; }
-  const lm=hand.landmarks[0];
-  const wrist=lm[0];                 // จุดข้อมือ
-  // ใช้ความกว้างของมือ (ข้อมือถึงปลายนิ้วกลาง) ประมาณความสูงที่ถือว่า "ยกแขนขึ้นมาระดับเอว/อก" ในเฟรม
-  const raised = wrist.y < 0.78;      // มือต้องอยู่สูงกว่าขอบล่างจอพอประมาณ ถือว่ายกแขนขึ้น
-  if(!raised){ armHistory=[]; return; }
-  const sx=(1-wrist.x);               // กลับด้านตามภาพสะท้อนกระจก
+let lastHandTs=0;
+const ARM_WINDOW_MS=700;      // กรอบเวลาที่ใช้ดูการแกว่งมือ (กว้างขึ้น = ปัดช้าได้)
+const ARM_DELTA=0.10;         // ระยะแกว่งมากสุด (สัดส่วนความกว้างจอ) ที่ถือว่าเป็นการปัด (น้อยลง = ปัดง่ายขึ้น)
+function handleArmSwipe(handResult){
+  if(!feedbackArmGesture) return;
   const t=performance.now();
+  // เลือกมือที่ยกสูงสุด (y น้อยสุด) จากมือที่ตรวจพบ
+  let wrist=null;
+  if(handResult && handResult.landmarks && handResult.landmarks.length){
+    handResult.landmarks.forEach(l=>{ const w=l[0]; if(!wrist||w.y<wrist.y) wrist=w; });
+  }
+  if(!wrist){
+    if(t-lastHandTs>250) armHistory=[];   // ปล่อยให้มือหายชั่วครู่ได้ ไม่ล้างทันที
+    return;
+  }
+  lastHandTs=t;
+  if(wrist.y>=0.92){ return; }            // นับเกือบทั้งจอ ยกเว้นขอบล่างสุด
+  const sx=(1-wrist.x);                    // กลับด้านตามภาพสะท้อนกระจก
   armHistory.push({x:sx,t});
   armHistory=armHistory.filter(p=>t-p.t<=ARM_WINDOW_MS);
   if(armHistory.length<2) return;
-  const first=armHistory[0];
-  const delta=sx-first.x;
-  if(Math.abs(delta)>=ARM_DELTA){
-    feedbackArmGesture=false;        // กันการปัดซ้อนจนกว่าจะไปข้อใหม่
+  // หาตำแหน่งซ้ายสุด-ขวาสุดในกรอบเวลา ถ้าแกว่งกว้างพอถือว่าปัด
+  let mn=Infinity,mx=-Infinity,mnT=0,mxT=0;
+  armHistory.forEach(p=>{ if(p.x<mn){mn=p.x;mnT=p.t;} if(p.x>mx){mx=p.x;mxT=p.t;} });
+  if(mx-mn>=ARM_DELTA){
+    feedbackArmGesture=false;              // กันการปัดซ้อนจนกว่าจะไปข้อใหม่
     armHistory=[];
-    const dir = delta>0 ? "right" : "left";
+    const dir = mxT>mnT ? "right" : "left"; // ทิศที่ตำแหน่งสุดเกิดทีหลัง = ทิศที่ปัดไป
     playFeedbackExit(dir);
   }
 }
@@ -1026,6 +1240,8 @@ function openSettings(){
   $("#cfgFb").value=settings.firebaseConfig;
   $("#cfgCol").value=settings.collection;
   $("#cloudStatus").style.display="none";
+  $("#xlsxStatus").style.display="none";
+  updateXlsxCurrent();
   $("#settingsModal").classList.add("show");
 }
 function closeSettings(){ $("#settingsModal").classList.remove("show"); }
@@ -1050,16 +1266,15 @@ function readSettingsFromForm(){
 async function onSaveSettings(){
   readSettingsFromForm(); saveSettingsStore(); applySettings();
   if(settings.musicOn) tryPlayMusic(); else bgm.pause();
-  if(settings.firebaseConfig){ await initCloud(); }
+  await initCloud();
   closeSettings();
 }
 async function onTestCloud(){
   readSettingsFromForm();
   const s=$("#cloudStatus"); s.style.display="block"; s.className="status warn"; s.textContent="กำลังทดสอบ…";
-  if(!settings.firebaseConfig){ s.className="status warn"; s.textContent="ไม่มี config — ระบบจะบันทึกลงในเครื่อง (localStorage)"; return; }
+  const usingHardcoded=!parseConfig(settings.firebaseConfig);
   const r=await initCloud();
-  if(r.ok){ s.className="status ok"; s.textContent="✓ เชื่อมต่อ Firestore สำเร็จ พร้อมบันทึกขึ้น cloud"; }
-  else if(r.reason==="no-config"){ s.className="status warn"; s.textContent="config อ่านไม่ออก ตรวจรูปแบบ JSON อีกครั้ง — ระหว่างนี้ใช้ localStorage"; }
+  if(r.ok){ s.className="status ok"; s.textContent=usingHardcoded?"✓ เชื่อมต่อ Firestore สำเร็จ (ใช้ config ที่ฝังไว้)":"✓ เชื่อมต่อ Firestore สำเร็จ พร้อมบันทึกขึ้น cloud"; }
   else{ s.className="status err"; s.textContent="เชื่อมต่อไม่สำเร็จ: "+r.reason+" (จะใช้ localStorage แทน)"; }
 }
 
@@ -1067,6 +1282,7 @@ async function onTestCloud(){
 $("#startBtn").addEventListener("click",init);
 $("#nextBtn").addEventListener("click",nextQuestion);
 $("#restartBtn").addEventListener("click",()=>{ $("#endModal").classList.remove("show"); startGame(); });
+$("#homeBtn").addEventListener("click",goHome);
 $("#gearBtn").addEventListener("click",openSettings);
 $("#gearBtnTop").addEventListener("click",openSettings);
 $("#closeSettings").addEventListener("click",closeSettings);
@@ -1076,19 +1292,37 @@ $("#cfgVol").addEventListener("input",e=>{ $("#cfgVolOut").textContent=e.target.
 $("#cfgSfxVol").addEventListener("input",e=>{ $("#cfgSfxVolOut").textContent=e.target.value+"%"; });
 $("#cfgSens").addEventListener("input",updateSensOut);
 $("#cfgHold").addEventListener("input",e=>{ $("#cfgHoldOut").textContent=(e.target.value/1000).toFixed(1)+" วิ"; });
+$("#cfgXlsx").addEventListener("change",e=>{ if(e.target.files&&e.target.files[0]) handleXlsxFile(e.target.files[0]); });
+$("#resetQuestionsBtn").addEventListener("click",()=>{
+  settings.customQuestions=null; saveSettingsStore(); applyCustomQuestions();
+  const s=$("#xlsxStatus"); s.style.display="block"; s.className="status warn"; s.textContent="กลับไปใช้ชุดคำถามเริ่มต้นแล้ว";
+  $("#cfgXlsx").value=""; updateXlsxCurrent();
+});
 $("#muteBtn").addEventListener("click",()=>{
   settings.musicOn=!settings.musicOn; saveSettingsStore(); updateMuteBtn();
   if(settings.musicOn) tryPlayMusic(); else bgm.pause();
 });
 $("#settingsModal").addEventListener("click",e=>{ if(e.target.id==="settingsModal") closeSettings(); });
 
+/* ===== กลับหน้าหลัก: หยุดกล้องและกลับไปหน้าเริ่ม ===== */
+function goHome(){
+  running=false; phase="idle";
+  $("#endModal").classList.remove("show");
+  try{ const s=video.srcObject; if(s){ s.getTracks().forEach(t=>t.stop()); } video.srcObject=null; }catch(e){}
+  ctx.clearRect(0,0,overlay.width,overlay.height);
+  $("#scenarioCard").style.display="none"; $("#hatLabel").style.display="none";
+  $("#carousel").style.display="none"; $("#confirmBtn").style.display="none";
+  $("#startScreen").classList.remove("hidden");
+}
+
 /* ===== เริ่มต้น ===== */
 loadSettings();
 applySettings();
+applyCustomQuestions();
 buildCarousel();
 refreshHatUI();
 preloadHats();
-if(settings.firebaseConfig){ initCloud(); }
+initCloud();   // เชื่อม Firestore ด้วย config ที่ฝังไว้เสมอ
 
 </script>
 </body>
